@@ -167,8 +167,8 @@ function CharacterPortrait({
             objectFit: "contain",
             transformOrigin: "50% 88%",
             animation: picked
-              ? "shori-talk 0.9s cubic-bezier(.45,0,.55,1) infinite"
-              : "shori-idle 2.6s cubic-bezier(.45,0,.55,1) infinite",
+              ? "card-shori-talk 0.9s cubic-bezier(.45,0,.55,1) infinite"
+              : "card-shori-idle 2.6s cubic-bezier(.45,0,.55,1) infinite",
           }}
         />
       </div>
@@ -736,6 +736,16 @@ export default function ImageConceptPicker() {
 
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0, background: "var(--cloud)" }}>
+      <style>{`
+        @keyframes card-shori-idle {
+          0%, 100% { transform: translateY(0) rotate(-1deg); }
+          50%      { transform: translateY(-4px) rotate(1deg); }
+        }
+        @keyframes card-shori-talk {
+          0%, 100% { transform: translateY(0) rotate(-2deg); }
+          50%      { transform: translateY(-3px) rotate(2.5deg); }
+        }
+      `}</style>
       <SideRail
         selected={selected}
         pendingCount={pendingJobIds.length}
