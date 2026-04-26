@@ -100,7 +100,7 @@
 2. **Tauri 셸 선택**: Electron 대비 번들 ~10MB, Rust 안전성, macOS API 풍부.
 3. **외부 백엔드 없음**: 모든 데이터는 로컬에. 인프라 비용 0원, 프라이버시 강함.
 4. **SQLite + asyncio queue**: Postgres/Redis/Celery 불필요. 단일 사용자 전제로 단순화.
-5. **번들 ffmpeg**: 사용자가 brew 설치 안 하도록 universal2 정적 바이너리를 앱에 포함.
+5. **번들 ffmpeg**: 사용자가 brew 설치 안 하도록 arm64 정적 바이너리를 앱에 포함 (Apple Silicon 전용).
 
 ## 다음 문서
 

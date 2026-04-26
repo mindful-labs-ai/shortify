@@ -32,14 +32,44 @@
   "hotPaths": [
     {
       "path": "README.md",
-      "accessCount": 13,
-      "lastAccessed": 1777164910688,
+      "accessCount": 16,
+      "lastAccessed": 1777167723275,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/IDEA.md",
+      "accessCount": 14,
+      "lastAccessed": 1777167793894,
       "type": "file"
     },
     {
       "path": "wiki/members.md",
+      "accessCount": 8,
+      "lastAccessed": 1777168102933,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
       "accessCount": 3,
-      "lastAccessed": 1777165435162,
+      "lastAccessed": 1777167712636,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/01-overview.md",
+      "accessCount": 3,
+      "lastAccessed": 1777167739201,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/08-security.md",
+      "accessCount": 3,
+      "lastAccessed": 1777167740776,
+      "type": "file"
+    },
+    {
+      "path": "src/pages/DropView.tsx",
+      "accessCount": 2,
+      "lastAccessed": 1777167716258,
       "type": "file"
     },
     {
@@ -49,21 +79,9 @@
       "type": "file"
     },
     {
-      "path": "wiki/prd/architecture/01-overview.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534202,
-      "type": "file"
-    },
-    {
       "path": "wiki/prd/architecture/README.md",
       "accessCount": 1,
       "lastAccessed": 1777164534214,
-      "type": "file"
-    },
-    {
-      "path": "wiki/prd/IDEA.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534794,
       "type": "file"
     },
     {
@@ -73,9 +91,183 @@
       "type": "file"
     },
     {
-      "path": "wiki/prd/architecture/08-security.md",
+      "path": ".env.example",
       "accessCount": 1,
-      "lastAccessed": 1777164542244,
+      "lastAccessed": 1777166251111,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1777166257868,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777166263115,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 1,
+      "lastAccessed": 1777166268965,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.node.json",
+      "accessCount": 1,
+      "lastAccessed": 1777166276285,
+      "type": "file"
+    },
+    {
+      "path": "tailwind.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1777166280888,
+      "type": "file"
+    },
+    {
+      "path": "postcss.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1777166286177,
+      "type": "file"
+    },
+    {
+      "path": "src/main.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777166288755,
+      "type": "file"
+    },
+    {
+      "path": "src/App.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1777166289524,
+      "type": "file"
+    },
+    {
+      "path": "src/index.css",
+      "accessCount": 1,
+      "lastAccessed": 1777166290266,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/api.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777166319427,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/sse.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777166322245,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/tauri.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777166326402,
+      "type": "file"
+    },
+    {
+      "path": "src/store/index.ts",
+      "accessCount": 1,
+      "lastAccessed": 1777166329607,
+      "type": "file"
+    },
+    {
+      "path": "src-tauri/Cargo.toml",
+      "accessCount": 1,
+      "lastAccessed": 1777166343908,
+      "type": "file"
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "accessCount": 1,
+      "lastAccessed": 1777166347156,
+      "type": "file"
+    },
+    {
+      "path": "src-tauri/src/main.rs",
+      "accessCount": 1,
+      "lastAccessed": 1777166354106,
+      "type": "file"
+    },
+    {
+      "path": "src-tauri/entitlements.plist",
+      "accessCount": 1,
+      "lastAccessed": 1777166356210,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/pyproject.toml",
+      "accessCount": 1,
+      "lastAccessed": 1777166360245,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166360977,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/main.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166369246,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166369660,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/health.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166370933,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/upload.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166374246,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/toc.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166375506,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/jobs.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166382048,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/concepts.py",
+      "accessCount": 1,
+      "lastAccessed": 1777166384371,
+      "type": "file"
+    },
+    {
+      "path": "scripts/dev.sh",
+      "accessCount": 1,
+      "lastAccessed": 1777166433493,
+      "type": "file"
+    },
+    {
+      "path": "wiki/PHASE0.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166466735,
+      "type": "file"
+    },
+    {
+      "path": "eslint.config.js",
+      "accessCount": 1,
+      "lastAccessed": 1777168069155,
       "type": "file"
     }
   ],
