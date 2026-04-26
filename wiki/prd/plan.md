@@ -10,7 +10,7 @@
 **별도 레포로 분기하지 말고, 현재 `video-cli` 레포에 새 브랜드(`brands/shortify/`)로 추가한다.**
 
 - 현재 아키텍처는 이미 "브랜드 중립 코어 + per-brand 프로필"로 진화 중 (`AGENTS.md`에 레이어드 머지 순서 명시).
-- Shortify는 d0po와 파이프라인의 **약 80%**를 공유 — Seedream → Seedance → ElevenLabs → Whisper → 리듬 컷 → 9:16 컴포즈 스택 그대로 재활용 가능.
+- Shortify는 d0po와 파이프라인의 **약 80%**를 공유 — `gemini-3.1-flash-image-preview` → `veo-3.1-generate-preview` → `gemini-3.1-flash-tts-preview` → `gemini-3.1-flash-preview` (정렬) → 리듬 컷 → 9:16 컴포즈 스택 그대로 재활용 가능.
 - 진짜 새 작업은 두 가지:
   1. **지식 인제스트** (PDF / URL / 마크다운 / 유튜브 자막 → 정제 텍스트)
   2. **교육형 비주얼 스타일** (애니 캐릭터 → 다이어그램·키워드 강조)
@@ -39,10 +39,10 @@
   └─> Ingestor          [신규] fetch + clean + chunk
         └─> Conceptizer [신규] LLM이 한 개념 + 4비트 학습 구조 추출
               └─> Scene planner (scene_splitter 재사용, 교육 톤으로 재튜닝)
-                    └─> Image gen (Seedream — 다이어그램/일러스트 프리셋)
-                          └─> I2V (Seedance — 모션 최소화, 호흡 느리게)
-                                └─> Narration (ElevenLabs — 설명형 보이스)
-                                      └─> Whisper align + 리듬 컷 (그대로 재사용)
+                    └─> Image gen (`gemini-3.1-flash-image-preview` — 다이어그램/일러스트 프리셋)
+                          └─> I2V (`veo-3.1-generate-preview` — 모션 최소화, 호흡 느리게)
+                                └─> Narration (`gemini-3.1-flash-tts-preview` — 설명형 보이스)
+                                      └─> `gemini-3.1-flash-preview` 정렬 + 리듬 컷 (그대로 재사용)
                                             └─> Compose v3 + [신규] 키워드 팝, 용어 강조, 출처 인용 오버레이
                                                   └─> final.mp4
 ```
@@ -102,7 +102,7 @@ brands/shortify/
 - 각 인제스터의 단일 책임: **정제 텍스트 + 메타데이터** 반환
 
 ### Phase 3 — 교육형 비주얼 (3~5일)
-- Seedream 프롬프트를 다이어그램/일러스트 톤으로 튜닝
+- `gemini-3.1-flash-image-preview` 프롬프트를 다이어그램/일러스트 톤으로 튜닝
 - 용어 하이라이트, 인용 footer 오버레이 신규
 - "정의" 비트에 split-screen (텍스트 + 이미지) 실험
 
@@ -135,9 +135,9 @@ shortify generate --source <url|pdf|md> --out <dir>
 | 자산 | 위치 | shortify 재사용 여부 |
 |------|------|----------------------|
 | `image_gen.py` | `d0po_video_cli/` | 그대로 재사용 (브랜드 프로필로 톤 변경) |
-| `video_gen.py` (Seedance) | `d0po_video_cli/` | 그대로 |
-| `narration_gen.py` (ElevenLabs) | `d0po_video_cli/` | 그대로 (voice·speed만 brand.yaml로 오버라이드) |
-| `alignment.py` (Whisper) | `d0po_video_cli/` | 그대로 |
+| `video_gen.py` (`veo-3.1-generate-preview`) | `d0po_video_cli/` | 그대로 |
+| `narration_gen.py` (`gemini-3.1-flash-tts-preview`) | `d0po_video_cli/` | 그대로 (voice·speed만 brand.yaml로 오버라이드) |
+| `alignment.py` (`gemini-3.1-flash-preview`) | `d0po_video_cli/` | 그대로 |
 | `rhythm_cut.py` | `d0po_video_cli/` | 그대로 |
 | `compose_v3.py` | `d0po_video_cli/` | overlay slot 확장 필요 |
 | `overlays.py` | `d0po_video_cli/` | term_highlight + citation_footer 추가 |

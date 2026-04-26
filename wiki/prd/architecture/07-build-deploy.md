@@ -104,7 +104,7 @@ a = Analysis(
         ('shortify_sidecar/prompts', 'shortify_sidecar/prompts'),
     ],
     hiddenimports=[
-        'faster_whisper',
+        'google.genai',
         'pydub',
         'fastapi',
         'uvicorn.workers',

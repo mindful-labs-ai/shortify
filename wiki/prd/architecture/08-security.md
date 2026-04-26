@@ -69,9 +69,9 @@ fn keychain_get(service: &str, key: &str) -> Result<Option<String>, String> {
 
 ```rust
 // 사이드카 spawn 시
-let claude_key = keychain_get("shortify", "anthropic")?.unwrap_or_default();
+let gemini_key = keychain_get("shortify", "gemini")?.unwrap_or_default();
 Command::new(sidecar_path)
-    .env("ANTHROPIC_API_KEY", claude_key)
+    .env("GEMINI_API_KEY", gemini_key)
     // ...
 ```
 
@@ -142,4 +142,4 @@ def safe_log(msg: str, **kwargs):
 
 - Sparkle 업데이트 채널 분리 (stable / beta)
 - 외부 API 호출 횟수 표시 (사용자가 비용 인지)
-- 로컬 모델 옵션 (Whisper는 이미 로컬, 향후 LLM도 로컬화 검토)
+- 로컬 모델 옵션 검토 (현재는 모든 추론·생성·정렬이 Google Gemini API)

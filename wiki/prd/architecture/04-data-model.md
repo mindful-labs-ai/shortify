@@ -10,7 +10,7 @@
 │   ├── images/scene_001.png ... scene_014.png
 │   ├── clips/scene_001.mp4 ...
 │   ├── narration.mp3
-│   ├── whisper_words.json
+│   ├── aligned_words.json
 │   ├── compose_plan.json
 │   └── final.mp4
 ├── logs/sidecar.log
@@ -40,7 +40,7 @@ CREATE TABLE image_concepts (
   name                    TEXT NOT NULL,
   description             TEXT,
   preview_path            TEXT NOT NULL,    -- assets/image_concepts/<slug>/preview.png
-  seedream_style_preset   TEXT NOT NULL,    -- Seedream 프롬프트 머리말
+  image_style_preset      TEXT NOT NULL,    -- gemini-3.1-flash-image-preview 프롬프트 머리말
   reference_image_paths   TEXT,             -- JSON: ["assets/.../ref1.png", ...]
   active                  INTEGER NOT NULL DEFAULT 1,
   sort_order              INTEGER NOT NULL DEFAULT 0
@@ -134,15 +134,13 @@ CREATE TABLE app_meta (
 | `photorealistic` | 사진 합성 | 실사 + 라벨 오버레이 |
 | `retro_paper` | 레트로 종이 | 종이 질감, 빈티지 색감 |
 
-각 컨셉의 `seedream_style_preset`는 Seedream 프롬프트 머리말로 직접 사용. 첫 실행 시 앱 번들의 `assets/image_concepts/<slug>/concept.json`에서 시드.
+각 컨셉의 `image_style_preset`는 `gemini-3.1-flash-image-preview` 프롬프트 머리말로 직접 사용. 첫 실행 시 앱 번들의 `assets/image_concepts/<slug>/concept.json`에서 시드.
 
 ## Keychain 키 (별도 저장소)
 
 | service | key | value |
 |---------|-----|-------|
-| `shortify` | `anthropic` | Claude API 키 |
-| `shortify` | `byteplus_ark` | BytePlus Ark (Seedream + Seedance) |
-| `shortify` | `elevenlabs` | ElevenLabs API 키 |
+| `shortify` | `gemini` | `GEMINI_API_KEY` — 모든 Google Gemini/Veo 호출 (텍스트·이미지·영상·TTS·오디오 정렬) 단일 키 |
 
 설정 화면에서 사용자가 입력 → Tauri의 `security-framework` 래퍼로 저장.
 

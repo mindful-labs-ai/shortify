@@ -16,9 +16,9 @@
 | **A. Tauri (Rust shell + Web UI) + Python sidecar** | 작은 번들(~10MB shell), 웹 UI 개발 속도, Python 파이프라인 그대로 사용, 크로스 플랫폼 여지 | Rust + Python 두 언어 빌드 파이프라인 | **추천 v0** |
 | B. SwiftUI 네이티브 + Python sidecar (PyOxidizer) | 최고의 macOS 통합감, Apple HIG | Swift↔Python IPC 복잡, App Store 샌드박스에서 Python 실행 까다로움 | v1 이후 검토 |
 | C. Electron + Python sidecar | 자료 풍부, 빠른 시작 | 번들 크기 ~150MB+, 메모리 무거움, "Mac스럽지 않음" | 비추 |
-| D. SwiftUI + 파이프라인 Swift 재구현 | 단일 언어, 가장 빠른 런타임 | Seedream/Seedance/Whisper SDK 재구현에 수개월 | 비현실적 |
+| D. SwiftUI + 파이프라인 Swift 재구현 | 단일 언어, 가장 빠른 런타임 | google-genai SDK 재구현에 수개월 | 비현실적 |
 
-**결정 기준**: video-cli의 모든 영상 파이프라인이 Python 의존성 (faster-whisper, ffmpeg-python, pyJianYingDraft, byteplus/elevenlabs SDK)이라 **재작성은 비현실적**. 따라서 Python을 사이드카로 번들링하는 것이 필수. 그 위에 어떤 셸을 올리느냐의 선택만 남음.
+**결정 기준**: video-cli의 모든 영상 파이프라인이 Python 의존성 (ffmpeg-python, pyJianYingDraft, google-genai SDK)이라 **재작성은 비현실적**. 따라서 Python을 사이드카로 번들링하는 것이 필수. 그 위에 어떤 셸을 올리느냐의 선택만 남음.
 
 ### 왜 별도 레포인가
 - **제품 형태가 완전히 다르다**: video-cli는 내부 CLI. shortify는 외부 사용자가 다운로드해서 쓰는 앱.
@@ -84,13 +84,19 @@
 │ L5. DOMAIN / PIPELINE LAYER                          [ video-cli 포팅된 코어 ]│
 │ ─────────────────────────────────────────────────────────────────────────────│
 │                                                                              │
-│   ingest_pdf ──► conceptizer ──► scene_splitter ──► image_gen (Seedream)     │
+│   ingest_pdf ──► conceptizer ──► scene_splitter ──► image_gen                │
+│                  (gemini-3.1-flash-                  (gemini-3.1-flash-      │
+│                   lite-preview)                       image-preview)         │
 │                                                          │                   │
-│                                          video_gen (Seedance) ◄──────────────┤
+│                                          video_gen (veo-3.1-generate-preview)│
 │                                                          │                   │
-│                                          narration_gen (ElevenLabs)          │
+│                                          narration_gen                       │
+│                                                          (gemini-3.1-flash-  │
+│                                                           tts-preview)       │
 │                                                          │                   │
-│                                          alignment (faster-whisper, local)   │
+│                                          alignment                           │
+│                                                          (gemini-3.1-flash-  │
+│                                                           preview)           │
 │                                                          │                   │
 │                                          rhythm_cut ──► compose ──► overlays │
 │                                                          │           │       │
@@ -113,19 +119,22 @@
 │   │   ├─ images/                 ├─ image_concepts                           │
 │   │   ├─ clips/                  └─ queue_tasks       Secrets                │
 │   │   ├─ narration.mp3                                macOS Keychain         │
-│   │   └─ final.mp4                                     · ARK_API_KEY         │
-│   └─ logs/                                             · ELEVENLABS_API_KEY  │
-│                                                        · ANTHROPIC_API_KEY   │
+│   │   └─ final.mp4                                     · GEMINI_API_KEY      │
+│   └─ logs/                                              (단일 키로 텍스트·    │
+│                                                          이미지·영상·TTS·    │
+│                                                          오디오 정렬 전체)    │
 └─────────────────────────┬────────────────────────────────────────────────────┘
                           │ HTTPS
                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ L7. EXTERNAL SERVICES                                                        │
 │ ─────────────────────────────────────────────────────────────────────────────│
-│  Anthropic Claude API     │  BytePlus Ark         │  ElevenLabs API          │
-│   · TOC fallback          │   · Seedream (image)  │   · Korean TTS           │
-│   · Conceptizer           │   · Seedance (I2V)    │                          │
-│   · Scene direction       │                       │  (Whisper는 로컬 실행)    │
+│                           Google Gemini API                                  │
+│  · gemini-3.1-flash-lite-preview   (TOC fallback / Conceptizer / Scene dir)  │
+│  · gemini-3.1-flash-image-preview  (image generation)                        │
+│  · veo-3.1-generate-preview        (image-to-video)                          │
+│  · gemini-3.1-flash-tts-preview    (Korean TTS)                              │
+│  · gemini-3.1-flash-preview        (audio alignment / word-level timestamps) │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 
@@ -166,9 +175,9 @@
 | L2 Shell/Native Bridge | OS API 접근, 사이드카 생애주기, 보안 | Tauri, Rust, security-framework |
 | L3 API | localhost RPC, 인증, SSE 푸시 | FastAPI, uvicorn |
 | L4 Application/Service | 유즈케이스 오케스트레이션, 큐 | asyncio, persistent SQLite queue |
-| L5 Domain/Pipeline | 영상 생성 도메인 로직 (video-cli 포팅) | pypdf, Pillow, ffmpeg-python, faster-whisper |
+| L5 Domain/Pipeline | 영상 생성 도메인 로직 (video-cli 포팅) | pypdf, Pillow, ffmpeg-python, google-genai |
 | L6 Infrastructure | 영속성, 비밀, 번들 바이너리 | SQLite, 로컬 FS, Keychain, ffmpeg |
-| L7 External | 외부 AI/미디어 API | Claude, Seedream, Seedance, ElevenLabs |
+| L7 External | 외부 AI/미디어 API | Google Gemini API (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`) |
 
 **의존성 방향**: L1 → L2 → L3 → L4 → L5 → L6 → L7. 역방향 의존 금지 (L5가 L3를 알면 안 됨). L4는 L5/L6에 의존, L3는 L4를 호출.
 
@@ -219,14 +228,14 @@
                 ┌────────────────────────────────┼────────────────────┐
                 ▼                                ▼                    ▼
    ~/Library/Application Support/Shortify/   macOS Keychain    External APIs
-   ┌────────────────────────────────┐       ┌──────────────┐   ┌────────────────┐
-   │ db.sqlite       (jobs, concepts)│      │ ARK_API_KEY  │   │ Anthropic Claude│
-   │ pdfs/           (원본 PDF)      │      │ ELEVENLABS_  │   │ BytePlus Ark   │
-   │ output/<jobId>/ (이미지/클립/mp4)│      │   API_KEY    │   │ ElevenLabs     │
-   │ assets/                         │      │ ANTHROPIC_   │   │ (Whisper local) │
-   │   image_concepts/  (앱 번들 복사)│      │   API_KEY    │   └────────────────┘
-   │   bgm/                          │      └──────────────┘
-   │   fonts/                        │
+   ┌────────────────────────────────┐       ┌──────────────┐   ┌────────────────────┐
+   │ db.sqlite       (jobs, concepts)│      │ GEMINI_API_  │   │ Google Gemini API  │
+   │ pdfs/           (원본 PDF)      │      │   KEY        │   │  · flash-lite      │
+   │ output/<jobId>/ (이미지/클립/mp4)│      │ (단일 키로   │   │  · flash-image     │
+   │ assets/                         │      │  텍스트·     │   │  · veo-3.1-generate│
+   │   image_concepts/  (앱 번들 복사)│      │  이미지·영상│   │  · flash-tts       │
+   │   bgm/                          │      │  ·TTS·정렬) │   │  · flash (audio)   │
+   │   fonts/                        │      └──────────────┘   └────────────────────┘
    └────────────────────────────────┘
 ```
 
@@ -258,7 +267,8 @@ User    Tauri Shell    Webview UI    Python Sidecar    asyncio Queue    External
  │           │             │ {pdf_id}       │                │                │              │
  │           │             │◄───────────────┤                │                │              │
  │           │             │                │                │ pop, run pypdf outline +      │
- │           │             │                │                │ Claude fallback              │
+ │           │             │                │                │ gemini-3.1-flash-lite-preview │
+ │           │             │                │                │ fallback                      │
  │           │             │                │                ├───────────────►│              │
  │           │             │ GET /pdfs/{id}/toc              │                │              │
  │           │             ├───────────────►│ return toc_json│                │              │
@@ -274,7 +284,8 @@ User    Tauri Shell    Webview UI    Python Sidecar    asyncio Queue    External
  │           │             ├───────────────►│                │                │              │
  │           │             │                │                │ extract section text          │
  │           │             │                │                ├──────────────────────────────►│
- │           │             │                │                │ Claude → conceptized JSON     │
+ │           │             │                │                │ gemini-3.1-flash-lite-preview │
+ │           │             │                │                │  → conceptized JSON           │
  │           │             │                │                ├───────────────►│              │
  │           │             │                │                │ stage 1→2→3 (await image)     │
  │           │             │ SSE: stage updates              │                │              │
@@ -285,11 +296,15 @@ User    Tauri Shell    Webview UI    Python Sidecar    asyncio Queue    External
  ├──────────►│             │ POST /jobs/{id}/select-image    │                │              │
  │           │             ├───────────────►│ update job, enqueue generate_video             │
  │           │             │                │                ├───────────────►│              │
- │           │             │                │                │ Seedream → 14 images          │
+ │           │             │                │                │ gemini-3.1-flash-image-preview│
+ │           │             │                │                │  → 14 images                  │
  │           │             │                │                ├───────────────►│──────────────►│
- │           │             │                │                │ Seedance → 14 clips           │
- │           │             │                │                │ ElevenLabs → narration.mp3    │
- │           │             │                │                │ Whisper align (local)         │
+ │           │             │                │                │ veo-3.1-generate-preview      │
+ │           │             │                │                │  → 14 clips                   │
+ │           │             │                │                │ gemini-3.1-flash-tts-preview  │
+ │           │             │                │                │  → narration.mp3              │
+ │           │             │                │                │ gemini-3.1-flash-preview      │
+ │           │             │                │                │  → word-level timestamps      │
  │           │             │                │                │ rhythm cut + ffmpeg compose   │
  │           │             │                │                │ → final.mp4                   │
  │           │             │                │                ├──────────────────────────────►│
@@ -353,11 +368,11 @@ User    Tauri Shell    Webview UI    Python Sidecar    asyncio Queue    External
 [3] 목차 체크리스트 (최대 5개 소단위 선택)
         │ (선택 즉시 각 단위를 Job으로 큐에 enqueue, stage=0)
         ▼
-[4-1] (백그라운드) 각 Job: PDF 섹션 텍스트 추출 → Claude로 제목·주제·4비트 학습 구조 생성
+[4-1] (백그라운드) 각 Job: PDF 섹션 텍스트 추출 → `gemini-3.1-flash-lite-preview`로 제목·주제·4비트 학습 구조 생성
 [4-2] (UI) 사용자에게 5개 이미지 컨셉 카드 노출 → 클릭 선택
         │
         ▼
-[5] 이미지 컨셉 선택 → 4-1 결과와 매칭 → Seedream → Seedance → TTS → 컴포즈
+[5] 이미지 컨셉 선택 → 4-1 결과와 매칭 → `gemini-3.1-flash-image-preview` → `veo-3.1-generate-preview` → `gemini-3.1-flash-tts-preview` → 컴포즈
         │
         ▼
 [6] 완성 영상이 라이브러리에 추가 → 인앱 AVPlayer 재생, Finder에서 보기, 공유
@@ -376,12 +391,12 @@ User    Tauri Shell    Webview UI    Python Sidecar    asyncio Queue    External
 |-------|------|------|-----------|
 | 0 | `queued` | 큐에 등록됨 | ~즉시 |
 | 1 | `extracting_section` | PDF에서 섹션 텍스트 추출 | ~5초 |
-| 2 | `conceptizing` | Claude가 제목/주제/4비트 추출 | ~15초 |
+| 2 | `conceptizing` | `gemini-3.1-flash-lite-preview`가 제목/주제/4비트 추출 | ~15초 |
 | 3 | `awaiting_image_choice` | 사용자가 이미지 컨셉 선택 대기 | (사용자 입력) |
-| 4 | `generating_images` | Seedream으로 14장 이미지 | ~60초 |
-| 5 | `generating_clips` | Seedance I2V로 클립 | ~5~7분 |
-| 6 | `generating_narration` | ElevenLabs TTS | ~30초 |
-| 7 | `aligning` | Whisper word-level (로컬 모델) | ~30초 |
+| 4 | `generating_images` | `gemini-3.1-flash-image-preview`로 14장 이미지 | ~60초 |
+| 5 | `generating_clips` | `veo-3.1-generate-preview` I2V로 클립 | ~5~7분 |
+| 6 | `generating_narration` | `gemini-3.1-flash-tts-preview` | ~30초 |
+| 7 | `aligning` | `gemini-3.1-flash-preview` word-level | ~30초 |
 | 8 | `composing` | ffmpeg 리듬 컷 + 필터 + 자막 + 훅 + BGM | ~2분 |
 | 9 | `done` | final.mp4 저장 완료 | — |
 | -1 | `failed` | 에러 발생 (사용자에게 재시도 옵션) | — |
@@ -509,9 +524,9 @@ shortify/
 | **DB** | SQLite (with `sqlmodel`) | 단일 파일, 멀티유저 없음 |
 | **작업 큐** | asyncio + SQLite-backed persistent queue | 외부 의존성 없이 앱 종료 후 재시작 복구 |
 | **PDF 파싱** | pypdf + pdfplumber | 목차 + 페이지별 텍스트 |
-| **LLM** | Anthropic Claude | 한글·구조화 추출 강함 |
-| **영상 생성** | Seedream + Seedance + ElevenLabs | video-cli 검증된 스택 |
-| **음성 정렬** | faster-whisper (로컬, CoreML 가속) | 외부 호출 없음, 프라이버시 |
+| **LLM** | `gemini-3.1-flash-lite-preview` (Google Gemini API) | 한글·구조화 추출 강함, 단일 키 통합 |
+| **영상 생성** | `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` | 단일 Google 스택, BYOK 1키 |
+| **음성 정렬** | `gemini-3.1-flash-preview` (audio understanding, word-level timestamps) | 추가 로컬 모델 불필요 |
 | **ffmpeg** | ffmpeg-full 정적 바이너리 (universal2) 번들 | 사용자가 brew 설치 불필요 |
 | **사이드카 패키징** | PyInstaller (--onefile, --target-arch universal2) | 단일 실행파일, Tauri sidecar로 등록 |
 | **Keychain** | `security-framework` crate | API 키 안전 저장 |
@@ -540,7 +555,7 @@ image_concepts (                       -- 앱 번들에 포함, 첫 실행 시 s
   name TEXT,
   description TEXT,
   preview_path TEXT,                   -- assets/image_concepts/<slug>/preview.png
-  seedream_style_preset TEXT,
+  image_style_preset TEXT,             -- gemini-3.1-flash-image-preview prompt prefix
   reference_image_paths TEXT,          -- JSON array
   active INTEGER DEFAULT 1,
   sort_order INTEGER
@@ -637,7 +652,7 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 | `d0po_video_cli/image_gen.py` | `sidecar/.../pipeline/image_gen.py` | 프롬프트는 `image_concept` 프리셋이 주입 |
 | `d0po_video_cli/video_gen.py` | `sidecar/.../pipeline/video_gen.py` | 그대로 |
 | `d0po_video_cli/narration_gen.py` | `sidecar/.../pipeline/narration_gen.py` | voice·speed 학습형 기본값 |
-| `d0po_video_cli/alignment.py` | `sidecar/.../pipeline/alignment.py` | faster-whisper CoreML 백엔드로 |
+| `d0po_video_cli/alignment.py` | `sidecar/.../pipeline/alignment.py` | `gemini-3.1-flash-preview` 오디오 이해 호출로 교체 |
 | `d0po_video_cli/rhythm_cut.py` | `sidecar/.../pipeline/rhythm_cut.py` | 그대로 |
 | `d0po_video_cli/compose_v3.py` | `sidecar/.../pipeline/compose.py` | overlay slot 확장, 번들 ffmpeg 경로 사용 |
 | `d0po_video_cli/overlays.py` | `sidecar/.../pipeline/overlays.py` | `term_highlight()` + `citation_footer()` 추가 |
@@ -675,10 +690,10 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 - Keychain API 키 저장 / 조회
 
 ### Phase 3 — 백엔드 코어 로직 (3~4일)
-- PDF 업로드 + 목차 추출 (pypdf outline + Claude 폴백)
-- Conceptizer (Claude → 4비트 JSON)
+- PDF 업로드 + 목차 추출 (pypdf outline + `gemini-3.1-flash-lite-preview` 폴백)
+- Conceptizer (`gemini-3.1-flash-lite-preview` → 4비트 JSON)
 - 영상 파이프라인 직렬 실행 (stage 4~8)
-- 이미지 컨셉 프리셋 → Seedream 프롬프트 어댑터
+- 이미지 컨셉 프리셋 → `gemini-3.1-flash-image-preview` 프롬프트 어댑터
 
 ### Phase 4 — UI (4~5일)
 - DropView (랜딩)
@@ -728,7 +743,7 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 ## 비용 추정
 
 ### 영상 1편 생산 (사용자가 BYOK일 때, 사용자 부담)
-- Seedream $0.45 + Seedance $2.10 + ElevenLabs $0.15 + Claude $0.05~$0.20 = **~$2.75~$2.90/영상**
+- `gemini-3.1-flash-image-preview` $0.56 + `veo-3.1-generate-preview` $10.50 + `gemini-3.1-flash-tts-preview` $0.01 + `gemini-3.1-flash-lite-preview` $0.04 + `gemini-3.1-flash-preview` (정렬) $0.01 = **~$11/영상** (자세한 산식은 README의 비용표 참조)
 
 ### 우리 (개발사) 인프라 비용
 - 외부 백엔드 없음 → **거의 0원**

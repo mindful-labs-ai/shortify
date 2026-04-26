@@ -115,7 +115,7 @@ Accept: text/event-stream
 서버 → 이벤트 (한 줄 = 1 event):
 data: {"job_id":"01J...","stage":1,"message":"Extracting section text"}
 
-data: {"job_id":"01J...","stage":2,"message":"Conceptizing with Claude"}
+data: {"job_id":"01J...","stage":2,"message":"Conceptizing with gemini-3.1-flash-lite-preview"}
 
 data: {"job_id":"01J...","stage":3,"message":"Awaiting image concept selection"}
 
@@ -200,7 +200,7 @@ GET /image-concepts
 | 409 | `INVALID_STAGE_TRANSITION` | 예: stage=4인데 select-image 호출 |
 | 422 | `MAX_SECTIONS_EXCEEDED` | sections 길이 > 5 |
 | 500 | `INTERNAL_ERROR` | 서버 오류 |
-| 502 | `EXTERNAL_API_FAILED` | Claude/Seedream 등 실패 (재시도 후 최종 실패) |
+| 502 | `EXTERNAL_API_FAILED` | Google Gemini / Veo 호출 실패 (재시도 후 최종 실패) |
 
 ## SSE 재연결
 
@@ -219,7 +219,8 @@ data: {...}
 ## Rate Limit
 
 - 로컬 단일 사용자라 글로벌 rate limit 없음
-- 단, 외부 API (Claude, BytePlus) 호출은 사이드카가 자체 토큰 버킷으로 제어
-  - Seedream: 동시 요청 ≤ 4
-  - Seedance: 동시 요청 ≤ 2 (비싸고 느림)
-  - Claude: 동시 요청 ≤ 3
+- 단, 외부 API (Google Gemini / Veo) 호출은 사이드카가 자체 토큰 버킷으로 제어
+  - `gemini-3.1-flash-image-preview`: 동시 요청 ≤ 4
+  - `veo-3.1-generate-preview`: 동시 요청 ≤ 2 (비싸고 느림)
+  - `gemini-3.1-flash-lite-preview`: 동시 요청 ≤ 3
+  - `gemini-3.1-flash-tts-preview` / `gemini-3.1-flash-preview` (정렬): 동시 요청 ≤ 2
