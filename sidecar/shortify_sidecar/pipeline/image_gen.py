@@ -32,7 +32,7 @@ async def _build_prompt(
     # 너무 길면 Imagen 프롬프트 토큰을 모두 먹어버림.
     subject = str(subject)[:600]
     return await _prompts.get(
-        "image_gen_scene_v2",
+        "image_gen_scene_v3",
         STYLE_PRESET=base,
         DIRECTION=direction,
         NEGATIVE=NEG,

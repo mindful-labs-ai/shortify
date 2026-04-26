@@ -18,45 +18,168 @@ def _project_root() -> Path:
 
 SEED = [
     {
+        # 메인 마스코트. 친근한 인간형. v0 기본 슬레이트의 첫 자리.
         "slug": "shorti",
         "name": "Shorti",
-        "description": "Hand-drawn arrows, boxes, and labels on a clean whiteboard.",
+        "description": (
+            "Shorti is a friendly young learner with a round face, soft "
+            "navy short hair, and a warm bright smile. Wears a cream "
+            "cardigan over a white tee and round glasses. Curious "
+            "everyman who points and asks questions."
+        ),
         "image_style_preset": (
-            "clean whiteboard diagram, hand-drawn arrows and boxes, "
-            "neat labels, technical illustration, monochrome with one accent color"
+            "Character: 'Shorti' — round-faced young learner, soft navy "
+            "short hair, friendly bright eyes, round wire glasses, cream "
+            "cardigan over white tee. Soft warm semi-realistic anime/"
+            "illustration style, clean lineart, gentle pastel palette. "
+            "Shorti is the same character across every scene; keep facial "
+            "features, hair, and outfit identical. Shorti reacts to the "
+            "subject by pointing, holding it, or looking at it on a board, "
+            "so the viewer's eye reads (1) Shorti, (2) the concept."
         ),
         "sort_order": 1,
-    }
+    },
+    {
+        # 구체적이고 정밀한 설명을 좋아하는 분석가형 캐릭터.
+        "slug": "professor_pico",
+        "name": "Professor Pico",
+        "description": (
+            "An older bespectacled professor mascot with a salt-and-pepper "
+            "beard, tweed jacket and bow tie. Lectures while pointing at a "
+            "chalkboard or holding a model of the concept."
+        ),
+        "image_style_preset": (
+            "Character: 'Professor Pico' — kindly older professor, round "
+            "spectacles, salt-and-pepper beard, brown tweed jacket with "
+            "elbow patches, navy bow tie. Warm classroom illustration "
+            "style with chalkboard greens and chalky textures. Pico stays "
+            "the same character across every scene; never change his "
+            "face, beard, or outfit. He explains the subject by pointing "
+            "at a chalkboard diagram, holding a labeled model, or "
+            "gesturing toward a tidy schematic."
+        ),
+        "sort_order": 2,
+    },
+    {
+        # 호기심 많은 어린 학습자 — Q&A·놀라움 톤.
+        "slug": "curious_robi",
+        "name": "Curious Robi",
+        "description": (
+            "Small friendly retro-future robot with a rounded cube head, "
+            "single big curious blue eye, antenna, and a chest screen. "
+            "Discovers each concept like a mini experiment."
+        ),
+        "image_style_preset": (
+            "Character: 'Curious Robi' — small friendly retro-future "
+            "robot, rounded cube head, one big glowing soft-blue cyclops "
+            "eye, slim antenna with a tiny ball, chest screen showing a "
+            "subtle UI, white-and-mint enamel body. Bright clean 3D-style "
+            "illustration with soft shadows. Robi stays exactly the same "
+            "across every scene; never change body, eye color, or "
+            "antenna. Robi shows the subject by displaying it on the "
+            "chest screen, holding it in its claw, or scanning it with a "
+            "soft beam of light."
+        ),
+        "sort_order": 3,
+    },
+    {
+        # 자연·생물·지구과학 톤에 잘 맞는 캐릭터.
+        "slug": "nara_explorer",
+        "name": "Nara the Explorer",
+        "description": (
+            "A young field-explorer character in a wide-brim hat and tan "
+            "vest. Investigates the concept outdoors with binoculars, a "
+            "field notebook, or specimens in hand."
+        ),
+        "image_style_preset": (
+            "Character: 'Nara' — young field explorer, light-brown skin, "
+            "long dark braided hair under a wide-brim adventurer hat, "
+            "tan multi-pocket vest over a green shirt, binoculars on a "
+            "strap, hand-bound field notebook. Naturalistic watercolor-"
+            "style illustration, earthy palette, soft daylight. Nara "
+            "stays the same character across every scene; do not change "
+            "her face, hat, or vest. She investigates the subject "
+            "outdoors — looking through binoculars, sketching in her "
+            "notebook, or carefully examining a specimen."
+        ),
+        "sort_order": 4,
+    },
+    {
+        # 수학·논리·연산 등 추상 개념에 어울리는 캐릭터.
+        "slug": "logica_fox",
+        "name": "Logica the Fox",
+        "description": (
+            "An anthropomorphic teacher fox in a clean cardigan, holding "
+            "a marker. Diagrams logical structure and equations on a "
+            "minimalist whiteboard."
+        ),
+        "image_style_preset": (
+            "Character: 'Logica' — anthropomorphic friendly fox teacher, "
+            "warm orange fur with cream chest, kind sharp eyes, neat "
+            "white cardigan, holding a marker pen. Minimalist flat-vector "
+            "illustration with thin outlines and one accent color per "
+            "scene. Logica stays the same character across every scene; "
+            "do not change fur color, cardigan, or expression style. "
+            "She presents the subject by drawing it cleanly on a "
+            "minimalist whiteboard with crisp arrows and labels."
+        ),
+        "sort_order": 5,
+    },
 ]
 
 
 async def seed_image_concepts(session: AsyncSession) -> int:
-    """존재하지 않는 슬러그만 insert. 반환: 새로 추가된 개수."""
-    result = await session.execute(select(ImageConcept.slug))
-    existing = {row[0] for row in result.all()}
+    """캐릭터 슬레이트 동기화.
+
+    - 신규 slug → INSERT
+    - 기존 slug → name/description/style_preset/sort_order 항상 UPSERT.
+      (이미지 컨셉은 사용자가 SQL 로 손댈 일이 거의 없고, 코드의 캐릭터
+      정의가 진실의 원천이므로 매 부팅마다 최신화한다.)
+    - 코드에 없는 활성 row → 비활성화 (active=0). 데이터 보존을 위해
+      DELETE 하지 않음.
+    반환: 새로 INSERT 된 개수.
+    """
+    result = await session.execute(select(ImageConcept))
+    existing: dict[str, ImageConcept] = {r.slug: r for r in result.scalars().all()}
     added = 0
     assets_root = _project_root() / "assets" / "image_concepts"
+    seed_slugs = {s["slug"] for s in SEED}
+
     for s in SEED:
-        if s["slug"] in existing:
-            continue
         slug_dir = assets_root / s["slug"]
         preview = slug_dir / "preview.png"
         refs = sorted(p.as_posix() for p in slug_dir.glob("ref_*.png"))
-        session.add(
-            ImageConcept(
-                slug=s["slug"],
-                name=s["name"],
-                description=s["description"],
-                preview_path=str(preview),
-                image_style_preset=s["image_style_preset"],
-                reference_image_paths=refs or None,
-                active=True,
-                sort_order=s["sort_order"],
+
+        if s["slug"] in existing:
+            row = existing[s["slug"]]
+            row.name = s["name"]
+            row.description = s["description"]
+            row.image_style_preset = s["image_style_preset"]
+            row.reference_image_paths = refs or None
+            row.preview_path = str(preview)
+            row.sort_order = s["sort_order"]
+            row.active = True
+        else:
+            session.add(
+                ImageConcept(
+                    slug=s["slug"],
+                    name=s["name"],
+                    description=s["description"],
+                    preview_path=str(preview),
+                    image_style_preset=s["image_style_preset"],
+                    reference_image_paths=refs or None,
+                    active=True,
+                    sort_order=s["sort_order"],
+                )
             )
-        )
-        added += 1
-    if added:
-        await session.commit()
+            added += 1
+
+    # 코드에서 빠진 캐릭터는 비활성화 (휴지통 역할)
+    for slug, row in existing.items():
+        if slug not in seed_slugs and row.active:
+            row.active = False
+
+    await session.commit()
     return added
 
 
@@ -155,6 +278,43 @@ PROMPT_SEED: list[dict] = [
             "Style: ${STYLE_PRESET}$. Composition: ${DIRECTION}$. "
             "Vertical 9:16 educational illustration. "
             "Stay faithful to the subject; do not invent unrelated content. "
+            "Negative: ${NEGATIVE}$."
+        ),
+    },
+    {
+        # v3: 캐릭터 슬레이트 도입 후. STYLE_PRESET 자리에 'Shorti'/'Pico' 같은
+        # 캐릭터 정의가 들어오므로 prompt 가 그 사실을 모델에 명시한다 —
+        # "이 캐릭터가 SUBJECT 를 가르치는 장면을 그려라." 형식.
+        "key": "image_gen_scene_v3",
+        "description": (
+            "Character-first Imagen prompt. CHARACTER (style preset) appears "
+            "in every scene, identical face/outfit/proportions. SUBJECT is "
+            "the PDF passage that the character is teaching/showing right "
+            "now. DIRECTION says how this scene is framed (hook / step / "
+            "recap). KEYWORDS get visible labels in the scene."
+        ),
+        "variables": [
+            "STYLE_PRESET",
+            "DIRECTION",
+            "NEGATIVE",
+            "SUBJECT",
+            "KEYWORDS",
+            "TITLE",
+        ],
+        "template": (
+            "${STYLE_PRESET}$\n\n"
+            "Lesson title (consistent across all scenes): ${TITLE}$.\n"
+            "This scene's subject (from the source passage): ${SUBJECT}$.\n"
+            "Terms to make visually prominent (as labels, captions, or "
+            "objects): ${KEYWORDS}$.\n"
+            "Scene composition role: ${DIRECTION}$.\n"
+            "Render the character above teaching, demonstrating, or "
+            "reacting to that subject. The character must be visibly "
+            "present in the scene with the same face, hair, and outfit "
+            "every time. Vertical 9:16 educational illustration, single "
+            "focal subject, clean readable composition.\n"
+            "Stay strictly faithful to the lesson topic and subject; do "
+            "not invent unrelated concepts.\n"
             "Negative: ${NEGATIVE}$."
         ),
     },
