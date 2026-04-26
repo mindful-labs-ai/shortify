@@ -5,11 +5,14 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 
 from .. import notify, prompts as _prompts
 from ..db.models import ImageConcept
 from . import _gemini
+
+log = logging.getLogger("shortify.pipeline.image_gen")
 
 CONCURRENCY = 4
 NEG = "blurry, watermark, text artifacts, low quality"
@@ -43,16 +46,56 @@ async def _build_prompt(
 
 
 def _safe_refs(concept: ImageConcept) -> list[Path] | None:
+    """concept.reference_image_paths 를 안전하게 list[Path] 로 변환.
+
+    JSON 컬럼이 list 가 아니라 단일 string 으로 저장된 적이 있어서
+    (DB row 가 사용자/이전 버그로 잘못 들어간 케이스) string · list ·
+    JSON 인코딩된 string 모두 허용한다.
+    """
     raw = concept.reference_image_paths
+
+    # 1) JSON 인코딩된 string ('["...","..."]') → 디코드 시도
+    if isinstance(raw, str):
+        s = raw.strip()
+        if s.startswith("["):
+            try:
+                import json as _json
+
+                decoded = _json.loads(s)
+                if isinstance(decoded, list):
+                    raw = decoded
+                else:
+                    raw = [s]  # fallback: 전체를 단일 path 로
+            except Exception:
+                raw = [s]
+        else:
+            raw = [s]  # 단일 path
+
     if not isinstance(raw, list):
+        log.warning(
+            "concept %s: reference_image_paths is %s, expected list — ignoring",
+            concept.slug,
+            type(raw).__name__,
+        )
         return None
+
     paths: list[Path] = []
+    missing: list[str] = []
     for item in raw:
         if not isinstance(item, str):
             continue
         p = Path(item)
         if p.exists():
             paths.append(p)
+        else:
+            missing.append(item)
+    if missing:
+        log.warning(
+            "concept %s: %d ref(s) not on disk: %s",
+            concept.slug,
+            len(missing),
+            missing,
+        )
     return paths or None
 
 
