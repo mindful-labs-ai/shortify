@@ -5,15 +5,11 @@ description = "Turn knowledge into short-form videos for faster learning"
 edition = "2021"
 rust-version = "1.77"
 
-[lib]
-name = "shortify_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
-tauri = { version = "2.0", features = ["macos-private-api"] }
+tauri = { version = "2.0", features = [] }
 tauri-plugin-dialog = "2.0"
 tauri-plugin-opener = "2.0"
 serde = { version = "1.0", features = ["derive"] }

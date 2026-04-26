@@ -161,3 +161,4 @@ sidecar/.pytest_cache/
 .omc/logs/
 .omc/research/
 .claude/local/
+**/.omc/
