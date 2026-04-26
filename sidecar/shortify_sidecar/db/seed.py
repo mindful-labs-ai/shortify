@@ -18,7 +18,9 @@ def _project_root() -> Path:
 
 SEED = [
     {
-        # 메인 마스코트. 친근한 인간형. v0 기본 슬레이트의 첫 자리.
+        # 메인 마스코트. v0 기본 슬레이트는 단일 캐릭터.
+        # 추가 캐릭터는 동일한 dict 형태로 이 리스트에 append 하면 자동으로
+        # 다음 부팅에서 upsert 된다 (코드에서 빠지면 active=False).
         "slug": "shorti",
         "name": "Shorti",
         "description": (
@@ -38,92 +40,6 @@ SEED = [
             "so the viewer's eye reads (1) Shorti, (2) the concept."
         ),
         "sort_order": 1,
-    },
-    {
-        # 구체적이고 정밀한 설명을 좋아하는 분석가형 캐릭터.
-        "slug": "professor_pico",
-        "name": "Professor Pico",
-        "description": (
-            "An older bespectacled professor mascot with a salt-and-pepper "
-            "beard, tweed jacket and bow tie. Lectures while pointing at a "
-            "chalkboard or holding a model of the concept."
-        ),
-        "image_style_preset": (
-            "Character: 'Professor Pico' — kindly older professor, round "
-            "spectacles, salt-and-pepper beard, brown tweed jacket with "
-            "elbow patches, navy bow tie. Warm classroom illustration "
-            "style with chalkboard greens and chalky textures. Pico stays "
-            "the same character across every scene; never change his "
-            "face, beard, or outfit. He explains the subject by pointing "
-            "at a chalkboard diagram, holding a labeled model, or "
-            "gesturing toward a tidy schematic."
-        ),
-        "sort_order": 2,
-    },
-    {
-        # 호기심 많은 어린 학습자 — Q&A·놀라움 톤.
-        "slug": "curious_robi",
-        "name": "Curious Robi",
-        "description": (
-            "Small friendly retro-future robot with a rounded cube head, "
-            "single big curious blue eye, antenna, and a chest screen. "
-            "Discovers each concept like a mini experiment."
-        ),
-        "image_style_preset": (
-            "Character: 'Curious Robi' — small friendly retro-future "
-            "robot, rounded cube head, one big glowing soft-blue cyclops "
-            "eye, slim antenna with a tiny ball, chest screen showing a "
-            "subtle UI, white-and-mint enamel body. Bright clean 3D-style "
-            "illustration with soft shadows. Robi stays exactly the same "
-            "across every scene; never change body, eye color, or "
-            "antenna. Robi shows the subject by displaying it on the "
-            "chest screen, holding it in its claw, or scanning it with a "
-            "soft beam of light."
-        ),
-        "sort_order": 3,
-    },
-    {
-        # 자연·생물·지구과학 톤에 잘 맞는 캐릭터.
-        "slug": "nara_explorer",
-        "name": "Nara the Explorer",
-        "description": (
-            "A young field-explorer character in a wide-brim hat and tan "
-            "vest. Investigates the concept outdoors with binoculars, a "
-            "field notebook, or specimens in hand."
-        ),
-        "image_style_preset": (
-            "Character: 'Nara' — young field explorer, light-brown skin, "
-            "long dark braided hair under a wide-brim adventurer hat, "
-            "tan multi-pocket vest over a green shirt, binoculars on a "
-            "strap, hand-bound field notebook. Naturalistic watercolor-"
-            "style illustration, earthy palette, soft daylight. Nara "
-            "stays the same character across every scene; do not change "
-            "her face, hat, or vest. She investigates the subject "
-            "outdoors — looking through binoculars, sketching in her "
-            "notebook, or carefully examining a specimen."
-        ),
-        "sort_order": 4,
-    },
-    {
-        # 수학·논리·연산 등 추상 개념에 어울리는 캐릭터.
-        "slug": "logica_fox",
-        "name": "Logica the Fox",
-        "description": (
-            "An anthropomorphic teacher fox in a clean cardigan, holding "
-            "a marker. Diagrams logical structure and equations on a "
-            "minimalist whiteboard."
-        ),
-        "image_style_preset": (
-            "Character: 'Logica' — anthropomorphic friendly fox teacher, "
-            "warm orange fur with cream chest, kind sharp eyes, neat "
-            "white cardigan, holding a marker pen. Minimalist flat-vector "
-            "illustration with thin outlines and one accent color per "
-            "scene. Logica stays the same character across every scene; "
-            "do not change fur color, cardigan, or expression style. "
-            "She presents the subject by drawing it cleanly on a "
-            "minimalist whiteboard with crisp arrows and labels."
-        ),
-        "sort_order": 5,
     },
 ]
 
