@@ -171,12 +171,32 @@ async def image(
         c = client()
         from google.genai import types as gtypes  # type: ignore
 
-        contents: list[Any] = [prompt]
+        # 캐릭터 일관성을 위해 ref 이미지를 prompt 앞에 두고, 그 사실을
+        # 명시적으로 알려준다. 안 그러면 모델이 ref 를 "느슨한 영감"으로만
+        # 참고해서 매 씬마다 얼굴/머리/옷이 흔들린다.
+        contents: list[Any] = []
         if ref_images:
+            preface = (
+                f"The following {len(ref_images)} image(s) are the canonical "
+                "reference for the main character's appearance (face, hair, "
+                "clothing, body proportions). The new image you generate MUST "
+                "depict the SAME character — keep these features identical "
+                "across every render. Treat these images as the ground truth "
+                "for who the character is, not as loose style inspiration."
+            )
+            contents.append(preface)
             for p in ref_images:
                 contents.append(
-                    gtypes.Part.from_bytes(data=p.read_bytes(), mime_type="image/png")
+                    gtypes.Part.from_bytes(
+                        data=p.read_bytes(), mime_type="image/png"
+                    )
                 )
+            contents.append(
+                "Now, render this scene featuring that exact character:\n\n"
+                + prompt
+            )
+        else:
+            contents.append(prompt)
         resp = c.models.generate_content(
             model=settings().model_image,
             contents=contents,
@@ -241,15 +261,32 @@ async def image(
         )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    log.info("gemini.image model=%s out=%s", settings().model_image, out_path.name)
+    n_refs = len(ref_images or [])
+    log.info(
+        "gemini.image model=%s out=%s refs=%d",
+        settings().model_image,
+        out_path.name,
+        n_refs,
+    )
     async with trace(
         kind="image",
         model=settings().model_image,
-        request_preview=prompt,
+        # admin Traces 패널에서 ref 사용 여부와 scene prompt 모두 확인 가능하게
+        request_preview=(
+            (
+                f"[refs={n_refs}: {', '.join(p.name for p in (ref_images or []))}] "
+                if n_refs
+                else ""
+            )
+            + prompt
+        ),
         request_meta={
             "out": out_path.name,
-            "n_refs": len(ref_images or []),
+            "n_refs": n_refs,
             "ref_names": [p.name for p in (ref_images or [])],
+            "ref_bytes": sum(
+                p.stat().st_size for p in (ref_images or []) if p.exists()
+            ),
         },
     ) as tr:
         size = await asyncio.to_thread(_call)
