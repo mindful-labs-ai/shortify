@@ -48,13 +48,16 @@ async def _build_prompt(
 def _safe_refs(concept: ImageConcept) -> list[Path] | None:
     """concept.reference_image_paths 를 안전하게 list[Path] 로 변환.
 
+    각 항목은 다음 중 하나로 해석된다 (우선순위):
+      1) 로컬 절대/상대 경로  — 그대로 Path 사용
+      2) http(s):// URL       — _ref_cache_dir 에 1회 다운로드 후 그 Path 사용
+                                (파일명 = sha256 prefix + 원본 확장자)
+
     JSON 컬럼이 list 가 아니라 단일 string 으로 저장된 적이 있어서
-    (DB row 가 사용자/이전 버그로 잘못 들어간 케이스) string · list ·
-    JSON 인코딩된 string 모두 허용한다.
+    string · list · JSON 인코딩된 string 모두 허용한다.
     """
     raw = concept.reference_image_paths
 
-    # 1) JSON 인코딩된 string ('["...","..."]') → 디코드 시도
     if isinstance(raw, str):
         s = raw.strip()
         if s.startswith("["):
@@ -62,14 +65,11 @@ def _safe_refs(concept: ImageConcept) -> list[Path] | None:
                 import json as _json
 
                 decoded = _json.loads(s)
-                if isinstance(decoded, list):
-                    raw = decoded
-                else:
-                    raw = [s]  # fallback: 전체를 단일 path 로
+                raw = decoded if isinstance(decoded, list) else [s]
             except Exception:
                 raw = [s]
         else:
-            raw = [s]  # 단일 path
+            raw = [s]
 
     if not isinstance(raw, list):
         log.warning(
@@ -82,7 +82,15 @@ def _safe_refs(concept: ImageConcept) -> list[Path] | None:
     paths: list[Path] = []
     missing: list[str] = []
     for item in raw:
-        if not isinstance(item, str):
+        if not isinstance(item, str) or not item.strip():
+            continue
+        item = item.strip()
+        if item.startswith(("http://", "https://")):
+            cached = _fetch_remote_ref(item)
+            if cached is not None:
+                paths.append(cached)
+            else:
+                missing.append(item)
             continue
         p = Path(item)
         if p.exists():
@@ -91,12 +99,53 @@ def _safe_refs(concept: ImageConcept) -> list[Path] | None:
             missing.append(item)
     if missing:
         log.warning(
-            "concept %s: %d ref(s) not on disk: %s",
+            "concept %s: %d ref(s) unavailable: %s",
             concept.slug,
             len(missing),
             missing,
         )
     return paths or None
+
+
+# ─────────────────────── remote ref fetch / cache ───────────────────────
+
+
+def _ref_cache_dir() -> Path:
+    """원격 ref 다운로드 캐시. ~/Library/Application Support/Shortify/ref_cache/."""
+    from ..storage.paths import app_support_dir
+
+    d = app_support_dir() / "ref_cache"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _fetch_remote_ref(url: str) -> Path | None:
+    """url → 로컬 캐시 Path. 실패시 None."""
+    import hashlib
+    import urllib.request
+    import urllib.error
+
+    digest = hashlib.sha256(url.encode("utf-8")).hexdigest()[:16]
+    suffix = ".png"
+    for ext in (".png", ".jpg", ".jpeg", ".webp"):
+        if url.lower().endswith(ext):
+            suffix = ".jpg" if ext == ".jpeg" else ext
+            break
+    cached = _ref_cache_dir() / f"{digest}{suffix}"
+    if cached.exists() and cached.stat().st_size > 0:
+        return cached
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Shortify/0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = resp.read()
+        if not data:
+            return None
+        cached.write_bytes(data)
+        log.info("fetched remote ref %s -> %s (%d bytes)", url, cached.name, len(data))
+        return cached
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        log.warning("failed to fetch remote ref %s: %s", url, e)
+        return None
 
 
 def _extract_grounding(conceptized: dict | None) -> tuple[str, str]:

@@ -16,38 +16,47 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
+# 캐스트 슬레이트 — 6인. 명세는 wiki/design/character/{01-bible,03-cast}.md.
+#   - Shori (마스코트 / 레서판다)             — final/sheet · turnaround 까지 ref
+#   - Pip · Iris · Jay · Vera · Sage (5인)    — cast/<slug>/portrait_v1
 SEED = [
     {
-        # 메인 마스코트. v0 기본 슬레이트는 단일 캐릭터.
-        # 추가 캐릭터는 동일한 dict 형태로 이 리스트에 append 하면 자동으로
-        # 다음 부팅에서 upsert 된다 (코드에서 빠지면 active=False).
-        "slug": "shorti",
-        "name": "Shorti",
+        # 대표 마스코트 / 앱 인격. 영상 본편에는 카메오만 (모서리 박수 등).
+        # 자산: assets/image_concepts/shori/{preview, ref_main(=portrait),
+        # ref_sheet, ref_front}.png — multi-ref 라 identity lock 이 가장 강함.
+        "slug": "shori",
+        "name": "Shori",
         "description": (
-            "Shorti is a friendly young learner with a round face, soft "
-            "navy short hair, and a warm bright smile. Wears a cream "
-            "cardigan over a white tee and round glasses. Curious "
-            "everyman who points and asks questions."
+            "쇼리 — Shortify 의 대표 레서판다 마스코트 (앱 인격). "
+            "Spark coral `#FF6B4A` 본체 + cream face mask + 줄무늬 꼬리. "
+            "영상에는 카메오로만 등장 (모서리 박수, 인트로 등)."
         ),
         "image_style_preset": (
-            "Character: 'Shorti' — round-faced young learner, soft navy "
-            "short hair, friendly bright eyes, round wire glasses, cream "
-            "cardigan over white tee. Soft warm semi-realistic anime/"
-            "illustration style, clean lineart, gentle pastel palette. "
-            "Shorti is the same character across every scene; keep facial "
-            "features, hair, and outfit identical. Shorti reacts to the "
-            "subject by pointing, holding it, or looking at it on a board, "
-            "so the viewer's eye reads (1) Shorti, (2) the concept."
+            "Character: 'Shori' — small friendly red panda mascot. "
+            "Spark coral body (#FF6B4A), cream face mask around eyes, "
+            "muzzle, chest, and inner ears (#FFF8F2), dark brown points "
+            "on eyes/ear-tips/paws/nose (#3A2A23), soft pink blush, "
+            "trademark striped tail (coral with darker coral-700 stripes). "
+            "Soft warm illustration style, clean rounded lineart, gentle "
+            "pastel palette. The reference images attached are the "
+            "canonical character sheet — match face shape, eye placement, "
+            "tail stripes, and proportions exactly. Shori is the same "
+            "mascot across every scene; never restyle, never change "
+            "species, never change palette. In educational scenes Shori "
+            "appears as a small cameo (corner clap, intro, end card, "
+            "celebration moment) — main subject of each scene is the "
+            "concept itself, with Shori as a friendly accent."
         ),
         "sort_order": 1,
     },
-    # ───────────── Cast 5인 (wiki/design/character/03-cast.md 명세 기반) ─────────────
+    # ───────────── Cast 5인 (wiki/design/character/03-cast.md) ─────────────
     {
         "slug": "pip",
         "name": "Pip",
         "description": (
-            "12세 ENFP, 호기심 폭발 \"리액션 메이커\". '왜?'로 시작하는 "
-            "콘텐츠 — 과학 실험·수학 퍼즐·자연 현상·어린이/입문자용."
+            "12세 ENFP, 호기심 폭발 '리액션 메이커'. '왜?'로 시작하는 "
+            "과학 실험·수학 퍼즐·자연 현상·어린이/입문자용 콘텐츠. "
+            "메인 컬러 sunny yellow `#FFC83D`."
         ),
         "image_style_preset": (
             "Character: 'Pip' — 12-year-old curious child, ENFP energy. "
@@ -55,12 +64,13 @@ SEED = [
             "hands tucked into front pocket, one knee-sock slipping down. "
             "Signature: lopsided open-mouth smile, eyes wide with surprise. "
             "Main color cue: sunny yellow #FFC83D in clothing or accent. "
-            "Soft semi-realistic anime/illustration style, clean lineart, "
-            "bright cheerful palette. Pip is the same character across "
-            "every scene — never change face shape, hair, or outfit. Pip "
-            "reacts to the subject with surprise or excitement, often "
-            "pointing or leaning in close to make the viewer feel the "
-            "discovery."
+            "Soft semi-realistic illustration style, clean lineart, bright "
+            "cheerful palette. The reference image attached is the "
+            "canonical front portrait — match face shape, hairstyle, and "
+            "outfit exactly. Pip is the same character across every scene; "
+            "never restyle or age. Pip reacts to the subject with surprise "
+            "or excitement — pointing, leaning in, or wide-eyed wonder — "
+            "to make the viewer feel the discovery."
         ),
         "sort_order": 2,
     },
@@ -68,21 +78,25 @@ SEED = [
         "slug": "iris",
         "name": "Iris",
         "description": (
-            "24세 INFJ, 사색적이고 차분한 통찰가. 인문학·철학·심리·문학, "
-            "'정답 없는 생각해볼 거리' 톤."
+            "24세 INFJ, 사색적이고 차분한 통찰가. 인문·철학·심리·문학, "
+            "'정답 없는 생각해볼 거리' 톤. "
+            "메인 컬러 mint green `#5BD4A8` (영상 안 의상/소품 한정 — "
+            "UI 의 '정답·완료' 의미와 충돌 방지)."
         ),
         "image_style_preset": (
             "Character: 'Iris' — 24-year-old thoughtful young woman, INFJ. "
             "Long straight hair tied to one side, round glasses, loose "
             "knit cardigan, frequently holding a book. Signature: head "
             "tilted slightly, soft contemplative smile. Main color cue: "
-            "mint green #5BD4A8 used only in clothing or props (NEVER "
-            "as a UI 'correct/done' element — that meaning is reserved "
-            "elsewhere). Calm semi-realistic anime/illustration style, "
-            "clean lineart, muted natural palette. Iris is the same "
-            "character across every scene — keep face, hair, glasses, "
-            "and cardigan identical. Iris approaches the subject "
-            "thoughtfully, hand near chin or gently touching the book."
+            "mint green #5BD4A8 only in clothing or props within the "
+            "rendered scene — NOT used as a UI 'correct/done' element. "
+            "Calm semi-realistic illustration style, clean lineart, muted "
+            "natural palette. The reference image attached is the "
+            "canonical front portrait — match face shape, hairstyle, "
+            "glasses, and cardigan exactly. Iris is the same character "
+            "across every scene; never restyle. Iris approaches the "
+            "subject thoughtfully — hand near chin, leaning slightly, or "
+            "gently touching the book."
         ),
         "sort_order": 3,
     },
@@ -90,20 +104,23 @@ SEED = [
         "slug": "jay",
         "name": "Jay",
         "description": (
-            "31세 ENTJ, 명료·효율의 결론부터형. 비즈니스·경제·시사·IT 트렌드, "
-            "'10초 안에 핵심' 요약 톤."
+            "31세 ENTJ, 명료·효율 결론부터형. 비즈니스·경제·시사·IT 트렌드, "
+            "'10초 안에 핵심' 60초 요약 톤. "
+            "메인 컬러 sky blue `#4A9BFF`."
         ),
         "image_style_preset": (
             "Character: 'Jay' — 31-year-old confident professional, ENTJ. "
-            "Tidy medium-length hair, dress shirt with sleeves rolled up, "
-            "uses fingers to count off points (1-2-3 gesture). Signature: "
-            "direct gaze at camera, decisive set mouth, counting hand. "
-            "Main color cue: sky blue #4A9BFF in shirt or accent. Sharp "
-            "semi-realistic anime/illustration style, clean confident "
-            "lineart, crisp modern palette. Jay is the same character "
-            "across every scene — never change face, hair, or shirt. Jay "
-            "presents the subject as a numbered list or a single sharp "
-            "point, gesturing decisively toward it."
+            "Tidy medium-length hair, crisp dress shirt with sleeves "
+            "rolled up, uses fingers to count off points (1-2-3 gesture). "
+            "Signature: direct gaze at camera, decisive set mouth, "
+            "counting hand. Main color cue: sky blue #4A9BFF in shirt or "
+            "accent. Sharp semi-realistic illustration style, clean "
+            "confident lineart, crisp modern palette. The reference image "
+            "attached is the canonical front portrait — match face, "
+            "hairstyle, and shirt exactly. Jay is the same character "
+            "across every scene; never restyle. Jay presents the subject "
+            "as a numbered list or a single sharp point, gesturing "
+            "decisively toward it."
         ),
         "sort_order": 4,
     },
@@ -112,19 +129,21 @@ SEED = [
         "name": "Vera",
         "description": (
             "52세 ESFJ, 따뜻한 경험 기반 어른. 생활 지식·건강·요리·살림팁, "
-            "'엄마·이모가 알려주는' 톤."
+            "'엄마·이모가 알려주는' 톤. 메인 컬러 lavender `#B69CE8`."
         ),
         "image_style_preset": (
             "Character: 'Vera' — 52-year-old warm middle-aged woman, "
             "ESFJ. Shoulder-length permed hair, pearl earrings, cardigan "
             "over a blouse, often holding a mug. Signature: hands "
-            "clasped, gentle eye-smile. Main color cue: lavender #B69CE8 "
-            "in cardigan or accent. Warm semi-realistic anime/"
-            "illustration style, soft lineart, comforting palette. Vera "
-            "is the same character across every scene — keep face, hair, "
-            "earrings, and cardigan identical. Vera shares the subject "
-            "as if telling a personal life lesson, hands open in welcome "
-            "or holding the subject like a treasured recipe."
+            "clasped together, gentle eye-smile. Main color cue: "
+            "lavender #B69CE8 in cardigan or accent. Warm semi-realistic "
+            "illustration style, soft lineart, comforting palette. The "
+            "reference image attached is the canonical front portrait — "
+            "match face, hairstyle, earrings, and cardigan exactly. Vera "
+            "is the same character across every scene; never restyle or "
+            "re-age. Vera shares the subject as if telling a personal "
+            "life lesson — hands open in welcome, or holding the subject "
+            "like a treasured recipe."
         ),
         "sort_order": 5,
     },
@@ -133,7 +152,8 @@ SEED = [
         "name": "Sage",
         "description": (
             "71세 ISTP, 과묵한 장인·전문가. 역사·전통·장인 기술·클래식, "
-            "'한 분야를 평생 파온 사람' 깊이의 이야기 톤."
+            "'한 분야를 평생 파온 사람' 깊이의 이야기 톤. "
+            "메인 컬러 warm gray `#8B7E72`."
         ),
         "image_style_preset": (
             "Character: 'Sage' — 71-year-old quiet master craftsman, "
@@ -141,12 +161,14 @@ SEED = [
             "shirt, almost always holding or working on something with "
             "his hands. Signature: faint knowing smile, slow nod. Main "
             "color cue: warm gray #8B7E72 in vest or accent. Refined "
-            "semi-realistic anime/illustration style, gentle lineart, "
-            "muted earthy palette. Sage is the same character across "
-            "every scene — never change face, white hair, glasses, or "
-            "vest. Sage explains the subject with the patience of a "
-            "lifetime: handling it carefully, examining it, or quietly "
-            "demonstrating the technique."
+            "semi-realistic illustration style, gentle lineart, muted "
+            "earthy palette. The reference image attached is the "
+            "canonical front portrait — match face, white hair, "
+            "spectacles, and vest exactly. Sage is the same character "
+            "across every scene; never restyle or re-age. Sage explains "
+            "the subject with the patience of a lifetime — handling it "
+            "carefully, examining it, or quietly demonstrating the "
+            "technique."
         ),
         "sort_order": 6,
     },
@@ -173,10 +195,22 @@ async def seed_image_concepts(session: AsyncSession) -> int:
     assets_root = _project_root() / "assets" / "image_concepts"
     seed_slugs = {s["slug"] for s in SEED}
 
+    # 사용자 결정: ref 경로는 GitHub raw URL 로 저장 (origin/main).
+    # _safe_refs() 가 http(s):// 를 자동으로 감지해 캐시 후 inline 첨부한다.
+    # SHORTIFY_ASSETS_BASE_URL 로 fork/branch 변경 가능.
+    import os as _os
+
+    base_url = _os.environ.get(
+        "SHORTIFY_ASSETS_BASE_URL",
+        "https://raw.githubusercontent.com/mindful-labs-ai/shortify/main/assets",
+    ).rstrip("/")
+
     for s in SEED:
         slug_dir = assets_root / s["slug"]
         preview = slug_dir / "preview.png"
-        refs = sorted(p.as_posix() for p in slug_dir.glob("ref_*.png"))
+        # 로컬 ref_*.png 파일 이름만 가져와 GitHub raw URL 로 변환.
+        ref_names = sorted(p.name for p in slug_dir.glob("ref_*.png"))
+        refs = [f"{base_url}/image_concepts/{s['slug']}/{n}" for n in ref_names]
 
         if s["slug"] in existing_slugs:
             # UPDATE — JSON 컬럼은 SQLAlchemy 가 list 를 직접 직렬화한다.
