@@ -4,6 +4,7 @@
 TODO: SDK 스펙 확정되면 method 시그니처 미세 조정. 현재 구조는
 ``google-genai`` 0.3+ 의 ``Client.models.generate_*`` 패턴을 따른다.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -33,6 +34,7 @@ def client():
 async def text_json(prompt: str, *, system: str | None = None) -> dict:
     """텍스트 → JSON 응답. 실패 시 RuntimeError."""
     import json as _json
+    import time as _time
 
     def _call():
         c = client()
@@ -46,7 +48,16 @@ async def text_json(prompt: str, *, system: str | None = None) -> dict:
         )
         return resp.text
 
+    t0 = _time.perf_counter()
+    log.info(
+        "gemini.text_json model=%s prompt_len=%d", settings().model_text, len(prompt)
+    )
     raw = await asyncio.to_thread(_call)
+    log.info(
+        "gemini.text_json done in %.2fs (resp_len=%d)",
+        _time.perf_counter() - t0,
+        len(raw or ""),
+    )
     try:
         return _json.loads(raw)
     except Exception as e:  # noqa: BLE001
@@ -54,7 +65,79 @@ async def text_json(prompt: str, *, system: str | None = None) -> dict:
         raise RuntimeError(f"Gemini did not return valid JSON: {e}") from e
 
 
+async def pdf_toc(pdf_path: Path, page_count: int) -> list[dict]:
+    """PDF 전체를 Gemini 에 첨부해 flat TOC 를 추출."""
+    import json as _json
+    import time as _time
+
+    def _call():
+        c = client()
+        from google.genai import types as gtypes  # type: ignore
+
+        prompt = (
+            "Extract the table of contents from this PDF. "
+            "Return a strict JSON array of "
+            '{"title": str, "page_start": int 0-indexed, '
+            '"page_end": int 0-indexed inclusive, "depth": int}. '
+            f"Total page count is {page_count}; page_start and page_end "
+            f"must be within [0, {page_count - 1}]. "
+            "Use depth 0 for top-level sections, 1+ for nested. "
+            "If the PDF has no explicit TOC, infer reasonable sections "
+            "from headings or split evenly."
+        )
+        resp = c.models.generate_content(
+            model=settings().model_text,
+            contents=[
+                prompt,
+                gtypes.Part.from_bytes(
+                    data=pdf_path.read_bytes(), mime_type="application/pdf"
+                ),
+            ],
+            config={"response_mime_type": "application/json"},
+        )
+        return resp.text
+
+    t0 = _time.perf_counter()
+    log.info(
+        "gemini.pdf_toc model=%s pdf=%s pages=%d",
+        settings().model_text,
+        pdf_path.name,
+        page_count,
+    )
+    raw = await asyncio.to_thread(_call)
+    log.info(
+        "gemini.pdf_toc done in %.2fs (resp_len=%d)",
+        _time.perf_counter() - t0,
+        len(raw or ""),
+    )
+    try:
+        parsed = _json.loads(raw)
+    except Exception as e:  # noqa: BLE001
+        log.error("Gemini JSON parse failed: %s", (raw or "")[:500])
+        raise RuntimeError(f"Gemini did not return valid JSON: {e}") from e
+    items = parsed if isinstance(parsed, list) else parsed.get("sections", [])
+    out: list[dict] = []
+    for it in items:
+        title = str(it.get("title", "")).strip()
+        if not title:
+            continue
+        out.append(
+            {
+                "idx": len(out),
+                "title": title,
+                "page_start": max(0, int(it.get("page_start", 0))),
+                "page_end": min(
+                    page_count - 1, int(it.get("page_end", page_count - 1))
+                ),
+                "depth": int(it.get("depth", 0)),
+            }
+        )
+    return out
+
+
 async def text(prompt: str, *, system: str | None = None) -> str:
+    import time as _time
+
     def _call():
         c = client()
         resp = c.models.generate_content(
@@ -64,11 +147,19 @@ async def text(prompt: str, *, system: str | None = None) -> str:
         )
         return resp.text
 
-    return await asyncio.to_thread(_call)
+    t0 = _time.perf_counter()
+    log.info("gemini.text model=%s prompt_len=%d", settings().model_text, len(prompt))
+    out = await asyncio.to_thread(_call)
+    log.info("gemini.text done in %.2fs", _time.perf_counter() - t0)
+    return out
 
 
-async def image(prompt: str, out_path: Path, *, ref_images: list[Path] | None = None) -> Path:
+async def image(
+    prompt: str, out_path: Path, *, ref_images: list[Path] | None = None
+) -> Path:
     """Imagen / gemini-image — 1장 생성 후 PNG 저장."""
+    import time as _time
+
     def _call():
         c = client()
         contents: list[Any] = [prompt]
@@ -76,7 +167,9 @@ async def image(prompt: str, out_path: Path, *, ref_images: list[Path] | None = 
             from google.genai import types as gtypes  # type: ignore
 
             for p in ref_images:
-                contents.append(gtypes.Part.from_bytes(p.read_bytes(), mime_type="image/png"))
+                contents.append(
+                    gtypes.Part.from_bytes(data=p.read_bytes(), mime_type="image/png")
+                )
         resp = c.models.generate_content(
             model=settings().model_image,
             contents=contents,
@@ -89,12 +182,21 @@ async def image(prompt: str, out_path: Path, *, ref_images: list[Path] | None = 
         raise RuntimeError("Gemini image: no inline_data in response")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info("gemini.image model=%s out=%s", settings().model_image, out_path.name)
     await asyncio.to_thread(_call)
+    log.info(
+        "gemini.image done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name
+    )
     return out_path
 
 
-async def i2v(image_path: Path, motion_prompt: str, out_path: Path, *, duration_sec: int = 5) -> Path:
+async def i2v(
+    image_path: Path, motion_prompt: str, out_path: Path, *, duration_sec: int = 5
+) -> Path:
     """Veo I2V — 이미지 1장 → MP4."""
+    import time as _time
+
     def _call():
         c = client()
         from google.genai import types as gtypes  # type: ignore
@@ -102,7 +204,7 @@ async def i2v(image_path: Path, motion_prompt: str, out_path: Path, *, duration_
         op = c.models.generate_videos(
             model=settings().model_video,
             prompt=motion_prompt,
-            image=gtypes.Image.from_file(str(image_path)),
+            image=gtypes.Image.from_file(location=str(image_path)),
             config={"duration_seconds": duration_sec, "aspect_ratio": "9:16"},
         )
         # long-running operation poll
@@ -115,12 +217,22 @@ async def i2v(image_path: Path, motion_prompt: str, out_path: Path, *, duration_
         video.video.save(str(out_path))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info(
+        "gemini.i2v model=%s in=%s dur=%ds",
+        settings().model_video,
+        image_path.name,
+        duration_sec,
+    )
     await asyncio.to_thread(_call)
+    log.info("gemini.i2v done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name)
     return out_path
 
 
 async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
     """gemini TTS native audio → MP3."""
+    import time as _time
+
     def _call():
         c = client()
         resp = c.models.generate_content(
@@ -141,7 +253,16 @@ async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
         raise RuntimeError("Gemini TTS: no inline_data in response")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info(
+        "gemini.tts model=%s voice=%s speed=%.2f text_len=%d",
+        settings().model_tts,
+        voice,
+        speed,
+        len(text_in),
+    )
     await asyncio.to_thread(_call)
+    log.info("gemini.tts done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name)
     return out_path
 
 
@@ -150,6 +271,8 @@ async def align_words_audio(audio_path: Path, text_in: str) -> list[dict]:
 
     응답: ``[{"word": str, "start": float, "end": float}, ...]``
     """
+    import time as _time
+
     def _call():
         c = client()
         from google.genai import types as gtypes  # type: ignore
@@ -161,7 +284,9 @@ async def align_words_audio(audio_path: Path, text_in: str) -> list[dict]:
                 "transcript. Output strict JSON array of "
                 '{"word": str, "start": float seconds, "end": float seconds}. '
                 f"Transcript: {text_in}",
-                gtypes.Part.from_bytes(audio_path.read_bytes(), mime_type="audio/mpeg"),
+                gtypes.Part.from_bytes(
+                    data=audio_path.read_bytes(), mime_type="audio/mpeg"
+                ),
             ],
             config={"response_mime_type": "application/json"},
         )

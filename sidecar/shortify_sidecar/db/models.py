@@ -122,3 +122,19 @@ class AppMeta(SQLModel, table=True):
 
     k: str = Field(primary_key=True)
     v: Optional[str] = None
+
+
+class Prompt(SQLModel, table=True):
+    """LLM 프롬프트 템플릿. 변수 치환 패턴은 ``${VAR}$``.
+
+    같은 key 가 있으면 사용자가 SQL 로 직접 ``UPDATE`` 해서 수정 가능.
+    seed 는 idempotent — 기존 row 를 덮어쓰지 않는다.
+    """
+
+    __tablename__ = "prompts"
+
+    key: str = Field(primary_key=True)
+    template: str
+    description: Optional[str] = None
+    variables: Optional[list] = Field(default=None, sa_column=Column(JSON))
+    updated_at: datetime = Field(default_factory=_utcnow)

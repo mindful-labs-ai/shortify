@@ -40,7 +40,7 @@ fn make_token() -> String {
 }
 
 fn pick_port() -> u16 {
-    portpicker::pick_unused_port().unwrap_or(51234)
+    51234
 }
 
 fn is_dev_mode() -> bool {
@@ -108,7 +108,13 @@ pub fn spawn(handle: &SidecarHandle) -> Result<ApiConfig, String> {
     let token = make_token();
     let port = pick_port();
     let host = "127.0.0.1".to_string();
-    let api_key = crate::keychain::get_or_empty("shortify", "gemini");
+    // dev 빌드는 매 cargo build 마다 ad-hoc 서명이 바뀌어 Keychain ACL 캐시가
+    // 무효화 → 부팅마다 macOS 인증 다이얼로그가 뜬다. env 가 있으면 그걸 우선 쓰고
+    // 없을 때만 Keychain 으로 폴백.
+    let api_key = std::env::var("GEMINI_API_KEY")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .unwrap_or_else(|| crate::keychain::get_or_empty("shortify", "gemini"));
 
     let mut cmd = if is_dev_mode() {
         dev_sidecar_command(&host, port, &token, &api_key)?
@@ -136,9 +142,24 @@ pub fn spawn(handle: &SidecarHandle) -> Result<ApiConfig, String> {
                 return Ok(cfg);
             }
         }
+        // 자식이 일찍 죽었으면(보통 EADDRINUSE) 포트 충돌로 단정.
+        if let Some(child) = handle.child.lock().unwrap().as_mut() {
+            if matches!(child.try_wait(), Ok(Some(_))) {
+                return Err(format!(
+                    "sidecar exited during boot — port {port} is likely already in use.\n\
+                     Find the holder:  lsof -nP -iTCP:{port} -sTCP:LISTEN\n\
+                     Kill it:         kill -9 <PID>\n\
+                     Or quit any standalone uvicorn / previous Tauri instance."
+                ));
+            }
+        }
         std::thread::sleep(Duration::from_millis(200));
     }
-    Err("sidecar health check timed out".into())
+    Err(format!(
+        "sidecar health check on {} timed out after 10s. \
+         If port {port} is held by another process, run: lsof -nP -iTCP:{port} -sTCP:LISTEN",
+        cfg.base_url
+    ))
 }
 
 fn ureq_health(base_url: &str) -> Result<bool, ()> {

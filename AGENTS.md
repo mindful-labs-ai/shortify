@@ -58,23 +58,23 @@ What it does, in order:
 
 ## Run
 
-| Goal | Command |
-|------|---------|
+| Goal                         | Command                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Sidecar only (fast, no Rust) | `cd sidecar && SHORTIFY_TOKEN=devtok .venv/bin/uvicorn shortify_sidecar.main:app --port 51234 --reload` |
-| Sidecar + Vite (web only) | `./scripts/dev.sh` then open `http://localhost:1420` |
-| Full stack (Tauri desktop) | `pnpm tauri dev` |
-| Production build | `pnpm tauri build` (needs codesign config) |
+| Sidecar + Vite (web only)    | `./scripts/dev.sh` then open `http://localhost:1420`                                                    |
+| Full stack (Tauri desktop)   | `pnpm tauri dev`                                                                                        |
+| Production build             | `pnpm tauri build` (needs codesign config)                                                              |
 
 ## Verify
 
-| Check | Command | Expected |
-|-------|---------|----------|
-| TypeScript | `pnpm tsc -b --noEmit` | exit 0, no output |
-| ESLint | `pnpm lint` | exit 0, no output |
-| Sidecar boot | `curl http://127.0.0.1:51234/health` | `{"ok":true}` |
-| Auth gate | `curl http://127.0.0.1:51234/image-concepts` | HTTP 401 |
-| Auth pass | `curl -H "Authorization: Bearer devtok" .../image-concepts` | HTTP 200 + 5 concepts |
-| Python lint | `cd sidecar && .venv/bin/ruff check shortify_sidecar` | exit 0 |
+| Check        | Command                                                     | Expected              |
+| ------------ | ----------------------------------------------------------- | --------------------- |
+| TypeScript   | `pnpm tsc -b --noEmit`                                      | exit 0, no output     |
+| ESLint       | `pnpm lint`                                                 | exit 0, no output     |
+| Sidecar boot | `curl http://127.0.0.1:51234/health`                        | `{"ok":true}`         |
+| Auth gate    | `curl http://127.0.0.1:51234/image-concepts`                | HTTP 401              |
+| Auth pass    | `curl -H "Authorization: Bearer devtok" .../image-concepts` | HTTP 200 + 5 concepts |
+| Python lint  | `cd sidecar && .venv/bin/ruff check shortify_sidecar`       | exit 0                |
 
 ## Edit conventions
 
@@ -86,19 +86,20 @@ What it does, in order:
 
 ## Error → fix table
 
-| Symptom | Fix |
-|---------|-----|
-| `failed to run 'cargo metadata'` | install rustup (see Required tools) |
-| `frontendDist ../dist doesn't exist` | run `pnpm build` once before any `cargo check`/`tauri build` |
-| `failed to open icon icons/icon.png` | run `setup.sh` (generates placeholder) or `pnpm tauri icon path/to/source.png` |
-| `the greenlet library is required` | `cd sidecar && .venv/bin/pip install -e ".[dev]"` |
-| `coroutine 'run_migrations_online' was never awaited` | use `asyncio.to_thread` (already done in `main.py`) |
-| `DEP0169 url.parse()` from pnpm | `corepack prepare pnpm@10.16.1 --activate` |
-| `GEMINI_API_KEY missing` | Put it in `.env` at repo root (auto-loaded by sidecar via python-dotenv on boot, walks up from cwd). Or Settings UI → Keychain (overrides .env when present). |
-| `Cannot find name 'process'` in `vite.config.ts` | already fixed: `@types/node` + tsconfig.node.json |
-| TS6310 composite/emit | already fixed: removed references in `tsconfig.json` |
-| ESLint can't find `vite.config.ts` | already fixed: ignored in `eslint.config.js` |
-| Stale dev DB after schema change | `rm -rf ~/Library/Application\ Support/Shortify/db.sqlite` (alembic re-applies on boot) |
+| Symptom                                                            | Fix                                                                                                                                                                                                                    |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `failed to run 'cargo metadata'`                                   | install rustup (see Required tools)                                                                                                                                                                                    |
+| `frontendDist ../dist doesn't exist`                               | run `pnpm build` once before any `cargo check`/`tauri build`                                                                                                                                                           |
+| `failed to open icon icons/icon.png`                               | run `setup.sh` (generates placeholder) or `pnpm tauri icon path/to/source.png`                                                                                                                                         |
+| `the greenlet library is required`                                 | `cd sidecar && .venv/bin/pip install -e ".[dev]"`                                                                                                                                                                      |
+| `coroutine 'run_migrations_online' was never awaited`              | use `asyncio.to_thread` (already done in `main.py`)                                                                                                                                                                    |
+| `DEP0169 url.parse()` from pnpm                                    | `corepack prepare pnpm@10.16.1 --activate`                                                                                                                                                                             |
+| `GEMINI_API_KEY missing`                                           | Put it in `.env` at repo root (auto-loaded by sidecar via python-dotenv on boot, walks up from cwd). Or Settings UI → Keychain (overrides .env when present).                                                          |
+| `Cannot find name 'process'` in `vite.config.ts`                   | already fixed: `@types/node` + tsconfig.node.json                                                                                                                                                                      |
+| TS6310 composite/emit                                              | already fixed: removed references in `tsconfig.json`                                                                                                                                                                   |
+| ESLint can't find `vite.config.ts`                                 | already fixed: ignored in `eslint.config.js`                                                                                                                                                                           |
+| Stale dev DB after schema change                                   | `rm -rf ~/Library/Application\ Support/Shortify/db.sqlite` (alembic re-applies on boot)                                                                                                                                |
+| `sidecar exited during boot — port 51234 is likely already in use` | `lsof -nP -iTCP:51234 -sTCP:LISTEN` → `kill -9 <PID>`. Cause: another `uvicorn`, a previous `pnpm tauri dev`, or admin standalone server. Sidecar always binds 51234 (fixed in `src-tauri/src/sidecar.rs::pick_port`). |
 
 ## Key decisions (read before refactoring)
 
@@ -110,11 +111,11 @@ What it does, in order:
 
 ## Branch ownership
 
-| Branch | Owner | Domain |
-|--------|-------|--------|
-| `sunny` | 박경선 | AI / video pipeline / domain |
+| Branch      | Owner  | Domain                                    |
+| ----------- | ------ | ----------------------------------------- |
+| `sunny`     | 박경선 | AI / video pipeline / domain              |
 | `gyeongmin` | 김경민 | Backend infra / Tauri integration / build |
-| `sicei` | 김성곤 | Design + Frontend (Claude Design → code) |
+| `sicei`     | 김성곤 | Design + Frontend (Claude Design → code)  |
 
 ## When in doubt
 

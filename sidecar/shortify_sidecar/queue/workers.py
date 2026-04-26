@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 import uuid
 from datetime import datetime, timezone
 
@@ -52,6 +53,11 @@ async def _set_stage(
     await s.execute(update(Job).where(Job.id == job_id).values(**values))
     s.add(JobEvent(job_id=job_id, stage=stage, message=message))
     await s.commit()
+    log.info(
+        "  job %s → stage %d (%s)%s",
+        job_id, stage, message or "",
+        f" error={error}" if error else "",
+    )
     await notify.publish(job_id, stage=stage, message=message)
 
 
@@ -195,13 +201,26 @@ class WorkerPool:
                 continue
             handler = HANDLERS.get(task.task_type)
             if handler is None:
+                log.error("[%s] unknown task_type %s (id=%s)", worker_id, task.task_type, task.id)
                 await self.queue.mark_failed(task.id, error=f"unknown task_type {task.task_type}", retry=False)
                 continue
+            t0 = time.perf_counter()
+            log.info(
+                "[%s] picked %s (id=%s, attempt=%d, payload=%s)",
+                worker_id, task.task_type, task.id, task.attempts, task.payload,
+            )
             try:
                 await handler(task)
                 await self.queue.mark_done(task.id)
+                log.info(
+                    "[%s] done   %s (id=%s, took=%.2fs)",
+                    worker_id, task.task_type, task.id, time.perf_counter() - t0,
+                )
             except Exception as e:  # noqa: BLE001
-                log.exception("task %s failed", task.id)
+                log.exception(
+                    "[%s] FAILED %s (id=%s, took=%.2fs): %s",
+                    worker_id, task.task_type, task.id, time.perf_counter() - t0, e,
+                )
                 job_id = task.payload.get("job_id")
                 if job_id:
                     async with session_factory()() as s:

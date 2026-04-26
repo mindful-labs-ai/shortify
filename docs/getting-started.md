@@ -8,14 +8,14 @@
 
 Shortify는 결정사항 #8에 따라 **Apple Silicon (arm64) 전용**이다. Intel Mac은 지원하지 않는다.
 
-| 도구 | 최소 버전 | 검증 |
-|------|-----------|------|
-| macOS | 13.0+ (Ventura) | `sw_vers -productVersion` |
-| Node.js | 20+ | `node --version` |
-| pnpm | 10.16+ | `pnpm --version` (corepack로 자동 설치 가능) |
-| Python | 3.11+ | `python3 --version` |
-| Rust + cargo | stable | `cargo --version` |
-| Xcode CLT | 최신 | `xcode-select -p` |
+| 도구         | 최소 버전       | 검증                                         |
+| ------------ | --------------- | -------------------------------------------- |
+| macOS        | 13.0+ (Ventura) | `sw_vers -productVersion`                    |
+| Node.js      | 20+             | `node --version`                             |
+| pnpm         | 10.16+          | `pnpm --version` (corepack로 자동 설치 가능) |
+| Python       | 3.11+           | `python3 --version`                          |
+| Rust + cargo | stable          | `cargo --version`                            |
+| Xcode CLT    | 최신            | `xcode-select -p`                            |
 
 ### 누락된 도구 설치
 
@@ -119,29 +119,29 @@ pnpm tauri dev
 
 ## 4. 일상 작업 흐름
 
-| 작업 | 명령 |
-|------|------|
+| 작업              | 명령                                                                              |
+| ----------------- | --------------------------------------------------------------------------------- |
 | 사이드카만 reload | `cd sidecar && .venv/bin/uvicorn shortify_sidecar.main:app --port 51234 --reload` |
-| 프론트만 dev | `pnpm dev` |
-| 풀 스택 dev | `pnpm tauri dev` |
-| 타입 체크 | `pnpm tsc -b --noEmit` |
-| 린트 | `pnpm lint` |
-| 린트 자동수정 | `pnpm lint:fix` |
-| Python 린트 | `cd sidecar && .venv/bin/ruff check shortify_sidecar` |
-| Python 테스트 | `cd sidecar && .venv/bin/pytest` |
-| 새 마이그레이션 | `cd sidecar && .venv/bin/alembic revision --autogenerate -m "msg"` |
+| 프론트만 dev      | `pnpm dev`                                                                        |
+| 풀 스택 dev       | `pnpm tauri dev`                                                                  |
+| 타입 체크         | `pnpm tsc -b --noEmit`                                                            |
+| 린트              | `pnpm lint`                                                                       |
+| 린트 자동수정     | `pnpm lint:fix`                                                                   |
+| Python 린트       | `cd sidecar && .venv/bin/ruff check shortify_sidecar`                             |
+| Python 테스트     | `cd sidecar && .venv/bin/pytest`                                                  |
+| 새 마이그레이션   | `cd sidecar && .venv/bin/alembic revision --autogenerate -m "msg"`                |
 
 ---
 
 ## 5. 데이터 위치
 
-| 항목 | 경로 |
-|------|------|
-| DB | `~/Library/Application Support/Shortify/db.sqlite` |
-| PDF | `~/Library/Application Support/Shortify/pdfs/` |
-| 영상 | `~/Library/Application Support/Shortify/output/<job_id>/final.mp4` |
-| 로그 | `~/Library/Application Support/Shortify/logs/` |
-| API 키 | macOS Keychain (`shortify` 서비스의 `gemini` 항목) |
+| 항목   | 경로                                                               |
+| ------ | ------------------------------------------------------------------ |
+| DB     | `~/Library/Application Support/Shortify/db.sqlite`                 |
+| PDF    | `~/Library/Application Support/Shortify/pdfs/`                     |
+| 영상   | `~/Library/Application Support/Shortify/output/<job_id>/final.mp4` |
+| 로그   | `~/Library/Application Support/Shortify/logs/`                     |
+| API 키 | macOS Keychain (`shortify` 서비스의 `gemini` 항목)                 |
 
 dev 환경에서 격리하려면 `SHORTIFY_DATA_DIR=/tmp/shortify-dev` env 로 오버라이드.
 
@@ -169,6 +169,23 @@ pnpm 9.x + Node 25 조합. `corepack prepare pnpm@10.16.1 --activate` 로 해결
 
 ### `GEMINI_API_KEY missing`
 Settings UI에서 입력하거나 dev 모드면 `.env`의 `GEMINI_API_KEY=` 채우기.
+
+### `sidecar exited during boot — port 51234 is likely already in use`
+사이드카는 항상 **51234 포트에 고정 바인딩**한다 (랜덤 포트 사용 안 함).
+누가 잡고 있는지 확인하고 종료:
+
+```bash
+lsof -nP -iTCP:51234 -sTCP:LISTEN
+# COMMAND   PID  USER ...
+kill -9 <PID>
+```
+
+자주 일어나는 원인:
+- 이전 `pnpm tauri dev` 인스턴스가 좀비로 남음 → 위 `kill -9`
+- 별도 터미널에서 standalone uvicorn 을 띄워둠 → 그 터미널 `Ctrl-C`
+- macOS 가 잠깐 `TIME_WAIT` 로 잡고 있음 → 30~60초 대기 후 재시도
+
+위치: 변경하려면 [`src-tauri/src/sidecar.rs`](../src-tauri/src/sidecar.rs) 의 `pick_port()`.
 
 ### `cargo` 첫 빌드가 너무 오래 걸림
 정상. Tauri + Rust 의존성 200+개 컴파일에 5~10분. 커피 한 잔.
