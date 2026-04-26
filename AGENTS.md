@@ -89,6 +89,8 @@ What it does, in order:
 | Symptom | Fix |
 |---------|-----|
 | `failed to run 'cargo metadata'` | install rustup (see Required tools) |
+| `frontendDist ../dist doesn't exist` | run `pnpm build` once before any `cargo check`/`tauri build` |
+| `failed to open icon icons/icon.png` | run `setup.sh` (generates placeholder) or `pnpm tauri icon path/to/source.png` |
 | `the greenlet library is required` | `cd sidecar && .venv/bin/pip install -e ".[dev]"` |
 | `coroutine 'run_migrations_online' was never awaited` | use `asyncio.to_thread` (already done in `main.py`) |
 | `DEP0169 url.parse()` from pnpm | `corepack prepare pnpm@10.16.1 --activate` |

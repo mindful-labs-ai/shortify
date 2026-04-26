@@ -13,7 +13,7 @@ ok()   { printf "\033[32m  ✓ %s\033[0m\n" "$1"; }
 fail() { printf "\033[31m  ✗ %s\033[0m\n" "$1"; exit 1; }
 
 # ─────────────── 1. 전제 조건 검증 ───────────────
-bold "[1/5] Checking prerequisites…"
+bold "[1/6] Checking prerequisites…"
 
 if [[ "$(uname -m)" != "arm64" ]]; then
   warn "Not Apple Silicon (uname -m = $(uname -m)). Shortify is arm64-only."
@@ -41,7 +41,7 @@ if ! xcode-select -p >/dev/null 2>&1; then
 fi
 
 # ─────────────── 2. pnpm 활성화 ───────────────
-bold "[2/5] Activating pnpm via corepack…"
+bold "[2/6] Activating pnpm via corepack…"
 if command -v corepack >/dev/null 2>&1; then
   corepack enable >/dev/null 2>&1 || true
   corepack prepare pnpm@10.16.1 --activate >/dev/null 2>&1
@@ -51,12 +51,12 @@ else
 fi
 
 # ─────────────── 3. 프론트 의존성 ───────────────
-bold "[3/5] Installing frontend dependencies (pnpm)…"
+bold "[3/6] Installing frontend dependencies (pnpm)…"
 pnpm install --silent
 ok "pnpm install done"
 
 # ─────────────── 4. Python 사이드카 venv ───────────────
-bold "[4/5] Setting up Python sidecar venv…"
+bold "[4/6] Setting up Python sidecar venv…"
 if [[ ! -d sidecar/.venv ]]; then
   python3 -m venv sidecar/.venv
   ok "venv created at sidecar/.venv"
@@ -67,10 +67,15 @@ sidecar/.venv/bin/pip install --upgrade pip --quiet
 sidecar/.venv/bin/pip install -e "sidecar[dev]" --quiet
 ok "sidecar deps installed"
 
-# ─────────────── 5. (선택) Cargo fetch ───────────────
-bold "[5/5] (Optional) Pre-fetching cargo deps…"
+# ─────────────── 5. Vite 빌드 (cargo check 가 dist 를 요구) ───────────────
+bold "[5/6] Building frontend (creates dist/ that Tauri compile-checks)…"
+pnpm build --silent
+ok "dist/ built"
+
+# ─────────────── 6. (선택) Cargo fetch ───────────────
+bold "[6/6] (Optional) Pre-fetching cargo deps…"
 if command -v cargo >/dev/null 2>&1; then
-  ( cd src-tauri && cargo fetch --locked 2>/dev/null || cargo fetch ) && ok "cargo fetch done"
+  ( cd src-tauri && cargo fetch 2>&1 ) >/dev/null && ok "cargo fetch done"
 else
   info "Skipped (cargo not installed)"
 fi
