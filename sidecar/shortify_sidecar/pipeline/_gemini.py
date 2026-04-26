@@ -9,9 +9,23 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+
+# Veo 폴링/다운로드에서 일시 오류로 보고 재시도할 키워드.
+_VEO_TRANSIENT_HINTS = (
+    "503",
+    "504",
+    "408",
+    "UNAVAILABLE",
+    "Deadline",
+    "timed out",
+    "timeout",
+    "ConnectionReset",
+    "ConnectionError",
+)
 
 from .. import prompts as _prompts
 from ..settings import settings
@@ -329,15 +343,21 @@ async def i2v(
         from google.genai import types as gtypes  # type: ignore
 
         # SDK 자체 retry: 5xx / 503(UNAVAILABLE) 시 지수 백오프.
+        # Veo 호출 자체가 응답까지 60~300s 걸린다 (LRO 가 아니라 초기
+        # generate_videos 응답 자체도 길다). timeout=120s 였을 때 가장
+        # 흔한 실패가 'read operation timed out' 이라 5분으로 늘림.
+        # 환경변수 SHORTIFY_VEO_TIMEOUT_SEC 로 조정 가능 (기본 300).
+        veo_timeout_sec = int(os.environ.get("SHORTIFY_VEO_TIMEOUT_SEC", "300"))
         http_opts = gtypes.HttpOptions(
-            timeout=120_000,  # ms — initial 호출 충분히 길게
+            timeout=veo_timeout_sec * 1000,
             retry_options=gtypes.HttpRetryOptions(
-                attempts=5,
-                initial_delay=2.0,
+                attempts=3,
+                initial_delay=3.0,
                 max_delay=30.0,
                 exp_base=2.0,
                 jitter=0.5,
-                http_status_codes=[429, 500, 502, 503, 504],
+                # 408 (Request Timeout) 도 추가 — read timeout 도 transient.
+                http_status_codes=[408, 429, 500, 502, 503, 504],
             ),
         )
 
@@ -372,9 +392,7 @@ async def i2v(
                 consecutive_err = 0
             except Exception as e:  # noqa: BLE001
                 msg = str(e)
-                transient = any(
-                    code in msg for code in ("503", "504", "UNAVAILABLE", "Deadline")
-                )
+                transient = any(h in msg for h in _VEO_TRANSIENT_HINTS)
                 if not transient:
                     raise
                 consecutive_err += 1
@@ -430,9 +448,7 @@ async def i2v(
                 except Exception as e:  # noqa: BLE001
                     last_err = e
                     msg = str(e)
-                    if not any(
-                        s in msg for s in ("503", "504", "UNAVAILABLE", "Deadline")
-                    ):
+                    if not any(h in msg for h in _VEO_TRANSIENT_HINTS):
                         raise
                 _t.sleep(2**attempt)
             if not data:
