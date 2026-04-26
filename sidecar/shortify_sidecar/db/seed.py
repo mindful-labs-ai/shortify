@@ -41,6 +41,115 @@ SEED = [
         ),
         "sort_order": 1,
     },
+    # ───────────── Cast 5인 (wiki/design/character/03-cast.md 명세 기반) ─────────────
+    {
+        "slug": "pip",
+        "name": "Pip",
+        "description": (
+            "12세 ENFP, 호기심 폭발 \"리액션 메이커\". '왜?'로 시작하는 "
+            "콘텐츠 — 과학 실험·수학 퍼즐·자연 현상·어린이/입문자용."
+        ),
+        "image_style_preset": (
+            "Character: 'Pip' — 12-year-old curious child, ENFP energy. "
+            "Short bob hairstyle, bright wide eyes, oversized hoodie with "
+            "hands tucked into front pocket, one knee-sock slipping down. "
+            "Signature: lopsided open-mouth smile, eyes wide with surprise. "
+            "Main color cue: sunny yellow #FFC83D in clothing or accent. "
+            "Soft semi-realistic anime/illustration style, clean lineart, "
+            "bright cheerful palette. Pip is the same character across "
+            "every scene — never change face shape, hair, or outfit. Pip "
+            "reacts to the subject with surprise or excitement, often "
+            "pointing or leaning in close to make the viewer feel the "
+            "discovery."
+        ),
+        "sort_order": 2,
+    },
+    {
+        "slug": "iris",
+        "name": "Iris",
+        "description": (
+            "24세 INFJ, 사색적이고 차분한 통찰가. 인문학·철학·심리·문학, "
+            "'정답 없는 생각해볼 거리' 톤."
+        ),
+        "image_style_preset": (
+            "Character: 'Iris' — 24-year-old thoughtful young woman, INFJ. "
+            "Long straight hair tied to one side, round glasses, loose "
+            "knit cardigan, frequently holding a book. Signature: head "
+            "tilted slightly, soft contemplative smile. Main color cue: "
+            "mint green #5BD4A8 used only in clothing or props (NEVER "
+            "as a UI 'correct/done' element — that meaning is reserved "
+            "elsewhere). Calm semi-realistic anime/illustration style, "
+            "clean lineart, muted natural palette. Iris is the same "
+            "character across every scene — keep face, hair, glasses, "
+            "and cardigan identical. Iris approaches the subject "
+            "thoughtfully, hand near chin or gently touching the book."
+        ),
+        "sort_order": 3,
+    },
+    {
+        "slug": "jay",
+        "name": "Jay",
+        "description": (
+            "31세 ENTJ, 명료·효율의 결론부터형. 비즈니스·경제·시사·IT 트렌드, "
+            "'10초 안에 핵심' 요약 톤."
+        ),
+        "image_style_preset": (
+            "Character: 'Jay' — 31-year-old confident professional, ENTJ. "
+            "Tidy medium-length hair, dress shirt with sleeves rolled up, "
+            "uses fingers to count off points (1-2-3 gesture). Signature: "
+            "direct gaze at camera, decisive set mouth, counting hand. "
+            "Main color cue: sky blue #4A9BFF in shirt or accent. Sharp "
+            "semi-realistic anime/illustration style, clean confident "
+            "lineart, crisp modern palette. Jay is the same character "
+            "across every scene — never change face, hair, or shirt. Jay "
+            "presents the subject as a numbered list or a single sharp "
+            "point, gesturing decisively toward it."
+        ),
+        "sort_order": 4,
+    },
+    {
+        "slug": "vera",
+        "name": "Vera",
+        "description": (
+            "52세 ESFJ, 따뜻한 경험 기반 어른. 생활 지식·건강·요리·살림팁, "
+            "'엄마·이모가 알려주는' 톤."
+        ),
+        "image_style_preset": (
+            "Character: 'Vera' — 52-year-old warm middle-aged woman, "
+            "ESFJ. Shoulder-length permed hair, pearl earrings, cardigan "
+            "over a blouse, often holding a mug. Signature: hands "
+            "clasped, gentle eye-smile. Main color cue: lavender #B69CE8 "
+            "in cardigan or accent. Warm semi-realistic anime/"
+            "illustration style, soft lineart, comforting palette. Vera "
+            "is the same character across every scene — keep face, hair, "
+            "earrings, and cardigan identical. Vera shares the subject "
+            "as if telling a personal life lesson, hands open in welcome "
+            "or holding the subject like a treasured recipe."
+        ),
+        "sort_order": 5,
+    },
+    {
+        "slug": "sage",
+        "name": "Sage",
+        "description": (
+            "71세 ISTP, 과묵한 장인·전문가. 역사·전통·장인 기술·클래식, "
+            "'한 분야를 평생 파온 사람' 깊이의 이야기 톤."
+        ),
+        "image_style_preset": (
+            "Character: 'Sage' — 71-year-old quiet master craftsman, "
+            "ISTP. Short white hair, round spectacles, vest over a "
+            "shirt, almost always holding or working on something with "
+            "his hands. Signature: faint knowing smile, slow nod. Main "
+            "color cue: warm gray #8B7E72 in vest or accent. Refined "
+            "semi-realistic anime/illustration style, gentle lineart, "
+            "muted earthy palette. Sage is the same character across "
+            "every scene — never change face, white hair, glasses, or "
+            "vest. Sage explains the subject with the patience of a "
+            "lifetime: handling it carefully, examining it, or quietly "
+            "demonstrating the technique."
+        ),
+        "sort_order": 6,
+    },
 ]
 
 
