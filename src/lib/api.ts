@@ -28,7 +28,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // ─────────── 도메인 타입 (sidecar 스키마와 동기화) ───────────
 export type TocItem = { idx: number; title: string; page_start: number; page_end: number };
 export type Pdf = { id: string; filename: string; page_count: number; toc: TocItem[] };
-export type ImageConcept = { slug: string; name: string; description: string; preview_path: string };
+export type ImageConcept = { slug: string; name: string; description: string; preview_url: string };
 export type Job = {
   id: string;
   pdf_id: string;
@@ -87,7 +87,20 @@ export const api = {
       { method: "DELETE" },
     ),
 
-  imageConcepts: () => request<{ concepts: ImageConcept[] }>("/image-concepts"),
+  imageConcepts: async () => {
+    const r = await request<{ concepts: ImageConcept[] }>("/image-concepts");
+    if (!config) throw new Error("API config not initialized");
+    const base = config.baseUrl;
+    return {
+      concepts: r.concepts.map((c) => ({
+        ...c,
+        // 사이드카가 상대 경로를 보내주므로 baseUrl 을 붙여 절대 URL 로.
+        preview_url: c.preview_url.startsWith("http")
+          ? c.preview_url
+          : `${base}${c.preview_url}`,
+      })),
+    };
+  },
 
   // SSE는 sse.ts 사용 (EventSource는 헤더 못 붙이므로 토큰을 쿼리로)
   jobStreamUrl: (id: string) => {

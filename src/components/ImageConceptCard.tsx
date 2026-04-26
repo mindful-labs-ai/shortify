@@ -19,7 +19,7 @@ export default function ImageConceptCard({ concept, selected, onSelect }: Props)
       ].join(" ")}
     >
       <img
-        src={concept.preview_path}
+        src={concept.preview_url}
         alt={concept.name}
         className="absolute inset-0 h-full w-full object-cover transition group-hover:scale-[1.02]"
         onError={(e) => {
