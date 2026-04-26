@@ -244,6 +244,19 @@ async def i2v(
         c = client()
         from google.genai import types as gtypes  # type: ignore
 
+        # SDK 자체 retry: 5xx / 503(UNAVAILABLE) 시 지수 백오프.
+        http_opts = gtypes.HttpOptions(
+            timeout=120_000,  # ms — initial 호출 충분히 길게
+            retry_options=gtypes.HttpRetryOptions(
+                attempts=5,
+                initial_delay=2.0,
+                max_delay=30.0,
+                exp_base=2.0,
+                jitter=0.5,
+                http_status_codes=[429, 500, 502, 503, 504],
+            ),
+        )
+
         # Image.from_file 시그니처가 SDK 버전마다 흔들려서 직접 생성으로 우회.
         img = gtypes.Image(
             image_bytes=image_path.read_bytes(),
@@ -256,14 +269,37 @@ async def i2v(
             config=gtypes.GenerateVideosConfig(
                 duration_seconds=safe_dur,
                 aspect_ratio="9:16",
+                http_options=http_opts,
             ),
         )
-        # long-running operation poll
+
+        # long-running operation poll — 폴링 자체가 503 으로 떨어질 수 있어
+        # 일시 오류는 계속 재시도. 최대 30 분.
         import time as _t
 
+        deadline = _t.time() + 30 * 60
+        consecutive_err = 0
         while not op.done:
+            if _t.time() > deadline:
+                raise RuntimeError("Veo polling timed out after 30 min")
             _t.sleep(5)
-            op = c.operations.get(op)
+            try:
+                op = c.operations.get(op)
+                consecutive_err = 0
+            except Exception as e:  # noqa: BLE001
+                msg = str(e)
+                transient = any(
+                    code in msg for code in ("503", "504", "UNAVAILABLE", "Deadline")
+                )
+                if not transient:
+                    raise
+                consecutive_err += 1
+                if consecutive_err >= 6:  # ~30s 내내 실패면 포기
+                    raise RuntimeError(
+                        f"Veo polling: transient errors did not recover ({msg})"
+                    ) from e
+                # 지수 백오프 — 추가 대기
+                _t.sleep(min(30, 2 ** consecutive_err))
         gen_videos = (
             getattr(getattr(op, "response", None), "generated_videos", None) or []
         )
@@ -280,9 +316,25 @@ async def i2v(
             uri = getattr(v, "uri", None)
             if not uri:
                 raise RuntimeError("Veo: response has neither video_bytes nor uri")
-            data = c.files.download(file=v)
+            # files.download 도 일시 503 가능 — 짧은 retry 루프
+            data = None
+            last_err: Exception | None = None
+            for attempt in range(4):
+                try:
+                    data = c.files.download(file=v)
+                    if data:
+                        break
+                except Exception as e:  # noqa: BLE001
+                    last_err = e
+                    msg = str(e)
+                    if not any(s in msg for s in ("503", "504", "UNAVAILABLE", "Deadline")):
+                        raise
+                _t.sleep(2 ** attempt)
             if not data:
-                raise RuntimeError(f"Veo: empty download from {uri}")
+                raise RuntimeError(
+                    f"Veo: empty download from {uri}"
+                    + (f" — {last_err}" if last_err else "")
+                )
             out_path.write_bytes(data)
         return out_path.stat().st_size if out_path.exists() else None
 
