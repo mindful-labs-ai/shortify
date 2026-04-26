@@ -1,7 +1,7 @@
 # Shortify 아키텍처 문서 (Index)
 
 > 이 폴더는 Shortify (macOS 학습 숏폼 생성 앱)의 세분화된 아키텍처 명세를 담는다.
-> 상위 기획서는 [`../shortify-plan.md`](../shortify-plan.md) 참고.
+> 상위 기획서는 [`../plan.md`](../plan.md) 참고.
 
 ---
 
@@ -28,15 +28,6 @@
 - **"API는?"** → [05-api-spec](./05-api-spec.md)
 - **"빌드는 어떻게?"** → [07-build-deploy](./07-build-deploy.md)
 - **"API 키는 어디 저장?"** → [08-security](./08-security.md)
-
----
-
-## 다이어그램 컨벤션
-
-- **레이어 박스**: `┌─ ─┐` / `└─ ─┘`
-- **데이터 흐름**: `─►` / `▼`
-- **프로세스 경계**: 굵은 박스 또는 명시적 라벨
-- **레이어 번호**: L1 (UI) → L7 (External)
 
 ---
 
