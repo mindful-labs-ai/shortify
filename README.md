@@ -40,15 +40,15 @@ Shortify는 PDF 한 권을 드롭하면, 사용자가 선택한 목차 단위마
 
 ### 7-Layer 구조
 
-| Layer                    | 책임                            | 주요 기술                                          |
-| ------------------------ | ------------------------------- | -------------------------------------------------- |
-| L1 Presentation          | 사용자 인터랙션, 진행 시각화    | React 19, Vite, Tailwind, Zustand                  |
-| L2 Shell / Native Bridge | OS API, 사이드카 생애주기, 보안 | Tauri 2, Rust, security-framework                  |
-| L3 API                   | localhost RPC, SSE 푸시         | FastAPI, uvicorn                                   |
-| L4 Application / Service | 유즈케이스 오케스트레이션, 큐   | asyncio, persistent SQLite queue                   |
-| L5 Domain / Pipeline     | 영상 생성 로직                  | pypdf, Pillow, ffmpeg, google-genai                |
-| L6 Infrastructure        | 영속성, 비밀, 번들 바이너리     | SQLite, 로컬 FS, Keychain, ffmpeg                  |
-| L7 External              | 외부 AI/미디어 API              | Google Gemini API (텍스트 · 이미지 · Veo · TTS)    |
+| Layer                    | 책임                            | 주요 기술                                       |
+| ------------------------ | ------------------------------- | ----------------------------------------------- |
+| L1 Presentation          | 사용자 인터랙션, 진행 시각화    | React 19, Vite, Tailwind, Zustand               |
+| L2 Shell / Native Bridge | OS API, 사이드카 생애주기, 보안 | Tauri 2, Rust, security-framework               |
+| L3 API                   | localhost RPC, SSE 푸시         | FastAPI, uvicorn                                |
+| L4 Application / Service | 유즈케이스 오케스트레이션, 큐   | asyncio, persistent SQLite queue                |
+| L5 Domain / Pipeline     | 영상 생성 로직                  | pypdf, Pillow, ffmpeg, google-genai             |
+| L6 Infrastructure        | 영속성, 비밀, 번들 바이너리     | SQLite, 로컬 FS, Keychain, ffmpeg               |
+| L7 External              | 외부 AI/미디어 API              | Google Gemini API (텍스트 · 이미지 · Veo · TTS) |
 
 **의존성 방향**: L1 → L2 → L3 → L4 → L5 → L6 → L7 (역방향 금지).
 
@@ -108,14 +108,14 @@ Shortify는 PDF 한 권을 드롭하면, 사용자가 선택한 목차 단위마
 
 영상 화자는 [`wiki/design/character/`](./wiki/design/character/) 명세 기반 6인.
 
-| Slug | 이름 | 역할 | 메인 컬러 |
-|------|------|------|----------|
-| `shori` | Shori | 대표 마스코트 (레서판다, 앱 인격 / 영상에는 카메오) | Spark coral `#FF6B4A` |
-| `pip` | Pip | 12세 ENFP — 호기심 리액션 메이커 | Sunny yellow `#FFC83D` |
-| `iris` | Iris | 24세 INFJ — 사색적 통찰가 | Mint green `#5BD4A8` |
-| `jay` | Jay | 31세 ENTJ — 명료 결론부터형 | Sky blue `#4A9BFF` |
-| `vera` | Vera | 52세 ESFJ — 따뜻한 경험 기반 | Lavender `#B69CE8` |
-| `sage` | Sage | 71세 ISTP — 과묵한 장인 | Warm gray `#8B7E72` |
+| Slug    | 이름  | 역할                                                | 메인 컬러              |
+| ------- | ----- | --------------------------------------------------- | ---------------------- |
+| `shori` | Shori | 대표 마스코트 (레서판다, 앱 인격 / 영상에는 카메오) | Spark coral `#FF6B4A`  |
+| `pip`   | Pip   | 12세 ENFP — 호기심 리액션 메이커                    | Sunny yellow `#FFC83D` |
+| `iris`  | Iris  | 24세 INFJ — 사색적 통찰가                           | Mint green `#5BD4A8`   |
+| `jay`   | Jay   | 31세 ENTJ — 명료 결론부터형                         | Sky blue `#4A9BFF`     |
+| `vera`  | Vera  | 52세 ESFJ — 따뜻한 경험 기반                        | Lavender `#B69CE8`     |
+| `sage`  | Sage  | 71세 ISTP — 과묵한 장인                             | Warm gray `#8B7E72`    |
 
 각 캐릭터의 image_style_preset과 portrait는 **identity-lock** 프롬프트와 ref 이미지로 매 씬 동일 인물을 유지한다 (`assets/image_concepts/<slug>/ref_*.png` 자동 첨부).
 
@@ -161,24 +161,24 @@ shortify/
 
 ## 기술 스택
 
-| 영역            | 선택                                                   |
-| --------------- | ------------------------------------------------------ |
-| 앱 셸           | Tauri 2.x (Rust)                                       |
-| UI              | React 19 + Vite + Tailwind + Zustand                   |
-| 사이드카        | Python 3.12 + FastAPI + uvicorn                        |
-| DB              | SQLite (sqlmodel + Alembic)                            |
-| 작업 큐         | asyncio + SQLite-backed persistent queue (PG-portable) |
-| PDF 파싱        | pypdf + Gemini multimodal 폴백 (스캔본 OCR)            |
-| LLM (text)      | `models/gemini-3.1-flash-lite-preview`                 |
-| 이미지 생성     | `models/gemini-3.1-flash-image-preview`                |
-| 영상 생성 (I2V) | `models/veo-3.1-fast-generate-preview`                 |
+| 영역            | 선택                                                         |
+| --------------- | ------------------------------------------------------------ |
+| 앱 셸           | Tauri 2.x (Rust)                                             |
+| UI              | React 19 + Vite + Tailwind + Zustand                         |
+| 사이드카        | Python 3.12 + FastAPI + uvicorn                              |
+| DB              | SQLite (sqlmodel + Alembic)                                  |
+| 작업 큐         | asyncio + SQLite-backed persistent queue (PG-portable)       |
+| PDF 파싱        | pypdf + Gemini multimodal 폴백 (스캔본 OCR)                  |
+| LLM (text)      | `models/gemini-3.1-flash-lite-preview`                       |
+| 이미지 생성     | `models/gemini-3.1-flash-image-preview`                      |
+| 영상 생성 (I2V) | `models/veo-3.1-fast-generate-preview`                       |
 | 음성 합성 (TTS) | `models/gemini-3.1-flash-tts-preview` (네이티브 오디오, WAV) |
-| 음성 정렬       | `models/gemini-3.1-flash-lite-preview` (Gemini Audio)  |
-| ffmpeg          | arm64 정적 바이너리 (앱 번들 포함, Apple Silicon only) |
-| 사이드카 패키징 | PyInstaller (--onefile, arm64)                         |
-| Keychain        | `security-framework` crate                             |
-| 자동 업데이트   | Sparkle (EdDSA 서명)                                   |
-| 배포            | DMG + GitHub Releases + Sparkle appcast                |
+| 음성 정렬       | `models/gemini-3.1-flash-lite-preview` (Gemini Audio)        |
+| ffmpeg          | arm64 정적 바이너리 (앱 번들 포함, Apple Silicon only)       |
+| 사이드카 패키징 | PyInstaller (--onefile, arm64)                               |
+| Keychain        | `security-framework` crate                                   |
+| 자동 업데이트   | Sparkle (EdDSA 서명)                                         |
+| 배포            | DMG + GitHub Releases + Sparkle appcast                      |
 
 모델 ID는 모두 `SHORTIFY_MODEL_*` env로 override 가능. `/admin/gemini/models`에서 키 권한 가용 ID 확인.
 
@@ -215,8 +215,8 @@ pnpm dev              # http://localhost:1421
 
 ### 필요한 API 키
 
-| 키               | 용도                                                                                              |
-| ---------------- | ------------------------------------------------------------------------------------------------- |
+| 키               | 용도                                                                                          |
+| ---------------- | --------------------------------------------------------------------------------------------- |
 | `GEMINI_API_KEY` | 모든 AI 호출 (텍스트 · 이미지 · Veo · TTS · 오디오 정렬). Google AI Studio / Vertex AI 키 1개 |
 
 자세한 env 옵션은 [`.env.example`](./.env.example).
@@ -247,14 +247,14 @@ git tag v1.2.3 && git push origin v1.2.3
 
 ## 데이터 위치
 
-| 항목           | 경로                                                               |
-| -------------- | ------------------------------------------------------------------ |
-| DB             | `~/Library/Application Support/Shortify/db.sqlite`                 |
-| 원본 PDF       | `~/Library/Application Support/Shortify/pdfs/<id>.pdf`             |
-| 영상 산출물    | `~/Library/Application Support/Shortify/output/<job_id>/`          |
-| 원격 ref 캐시  | `~/Library/Application Support/Shortify/ref_cache/`                |
-| 로그           | `~/Library/Application Support/Shortify/logs/sidecar.log`          |
-| API 키         | macOS Keychain (`shortify` service · `gemini` key) — prod 한정     |
+| 항목          | 경로                                                           |
+| ------------- | -------------------------------------------------------------- |
+| DB            | `~/Library/Application Support/Shortify/db.sqlite`             |
+| 원본 PDF      | `~/Library/Application Support/Shortify/pdfs/<id>.pdf`         |
+| 영상 산출물   | `~/Library/Application Support/Shortify/output/<job_id>/`      |
+| 원격 ref 캐시 | `~/Library/Application Support/Shortify/ref_cache/`            |
+| 로그          | `~/Library/Application Support/Shortify/logs/sidecar.log`      |
+| API 키        | macOS Keychain (`shortify` service · `gemini` key) — prod 한정 |
 
 dev 환경 격리: `SHORTIFY_DATA_DIR=/tmp/shortify-dev` env로 오버라이드.
 
@@ -299,8 +299,7 @@ dev 환경 격리: `SHORTIFY_DATA_DIR=/tmp/shortify-dev` env로 오버라이드.
 
 ## 문서 인덱스
 
-위키 루트: [`wiki/`](./wiki/) · 사람용 가이드: [`docs/getting-started.md`](./docs/getting-started.md) · AI 에이전트용: [`AGENTS.md`](./AGENTS.md) · v0 빌드 회고: [`docs/session-history.md`](./docs/session-history.md)
-
+위키 루트: [`wiki/`](./wiki/) · 사람용 가이드: [`wiki/docs/getting-started.md`](./wiki/docs/getting-started.md) · AI 에이전트용: [`AGENTS.md`](./AGENTS.md)
 ### 기획 / 아키텍처
 
 - 기획안: [`wiki/prd/IDEA.md`](./wiki/prd/IDEA.md)
@@ -322,4 +321,3 @@ dev 환경 격리: `SHORTIFY_DATA_DIR=/tmp/shortify-dev` env로 오버라이드.
 ### 팀 / 협업
 
 - [팀원 소개](./wiki/members.md) — 박경선 · 김경민 · 강호남 · 김성곤
-- [v0 빌드 회고](./docs/session-history.md) — 80+ 커밋의 의사결정 트레이스

@@ -483,7 +483,7 @@ shortify/
 │   └── PyInstaller.spec           # 단일 실행파일 빌드 설정
 │
 ├── assets/
-│   ├── image_concepts/            # 앱 번들에 포함 (5종 컨셉)
+│   ├── image_concepts/            # 6인 캐스트 (shori 마스코트 + pip/iris/jay/vera/sage)
 │   │   ├── diagram_whiteboard/
 │   │   ├── illustrated_textbook/
 │   │   ├── minimalist_3d/
@@ -726,36 +726,61 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 
 ---
 
-## 결정 필요 사항
+## 결정 history (참고)
 
-1. **앱 셸**: Tauri 추천이 ok? (대안: Electron / SwiftUI 네이티브)
-2. **레포 호스팅**: `mindful-labs/shortify`로 가도 되나?
-3. **언어**: UI 한국어 우선? 영어 우선? 둘 다?
-4. **API 키 정책**: 사용자가 자기 키 입력 (BYOK) vs. 우리가 프록시 (구독 과금)?
-   - BYOK는 v0에 단순. 프록시는 백엔드 + 결제 시스템 추가 필요 → macOS 앱 단독 컨셉과 충돌.
-5. **이미지 컨셉 5종**: 어떤 톤? (예: 화이트보드 / 교과서 일러스트 / 미니멀 3D / 사진 합성 / 레트로 종이)
-6. **PDF 외 입력 v0 포함?**: v0는 PDF only vs. URL·유튜브도 같이?
-7. **App Store 타겟 시점**: v0 DMG 직배포 → v1.5에서 App Store 검토 ok?
-8. **자동 업데이트**: Sparkle ok? (Tauri 내장 updater + Apple Sparkle bridge)
-9. **요금 모델**: 완전 무료 (BYOK) / 유료 앱 (단발 결제) / 구독?
-10. **Apple Silicon only vs. universal2**: Intel Mac도 지원? (universal2 빌드 = 번들 크기 2배)
+기획 시점에 PM이 답해야 했던 10개 질문은 **모두 lock 완료** — 답은 아래
+"결정 사항 (Lock)" 섹션을 참고. 원본 질문 형태는 git history (commit
+범위 `7cb4708..` 의 IDEA.md) 에서 확인 가능.
 
-결정:
-1. **앱 셸**: Tauri
-2. **레포 호스팅**: `mindful-labs/shortify`
-3. **언어**: UI는 영어.
-4. **API 키 정책**: 사용자가 키 입력 (BYOK)
-5. **이미지 컨셉 5종**: 이미지 Asset 폴더에 5종 컨셉 프리셋
-6. **PDF 외 입력 v0 포함?**: PDF only
-7. **App Store 타겟 시점**: 배포 안함
-8.  **Apple Silicon only vs. universal2**: Intel Mac 지원 안함
+## 결정 사항 (Lock)
+
+기획 시점에 답한 8개 + v0 구현 진행 중 lock 된 17개.
+
+### 기획 결정 (P-)
+
+| # | 결정 | 의도 |
+|---|------|------|
+| P-1 | **앱 셸 = Tauri 2** | 작은 번들 + Rust 안정성 + macOS API |
+| P-2 | **레포 = `mindful-labs/shortify`** | mindful-labs org 산하 단일 레포 |
+| P-3 | **UI 언어 = 영어** | 글로벌 타겟 우선 |
+| P-4 | **API 키 정책 = BYOK** | 사용자 키 직접 입력. 우리 백엔드 0원 |
+| P-5 | **캐스트 = 6인 캐릭터** | Shori 마스코트 + Pip · Iris · Jay · Vera · Sage. (이전: 5종 비주얼 프리셋) |
+| P-6 | **입력 = PDF only (v0)** | URL / 유튜브는 v1+ |
+| P-7 | **App Store 미배포 (영구)** | 샌드박스 + 검토 비용 회피. DMG 직배포만 |
+| P-8 | **Apple Silicon arm64 only** | Intel Mac 미지원. 번들 크기 절반 |
+
+### 구현 결정 (I-)
+
+v0 구현 중 트러블슈팅과 사용자 피드백으로 lock.
+
+| # | 결정 | 이유 / 영향 |
+|---|------|------------|
+| I-1 | **모든 외부 AI = Google Gemini API 단일** | 키 1개. 모델 5종 (text · image · Veo Fast · TTS · audio align) |
+| I-2 | **모델 ID 형식 = `models/<name>`** | google-genai SDK 정식 형태 |
+| I-3 | **영상 모델 = Veo Fast** (`models/veo-3.1-fast-generate-preview`) | 일반 Veo 대비 응답 빠름 |
+| I-4 | **DB = SQLite + sqlmodel + Alembic** | PG 이전 가능하도록 6 규칙 (DATABASE_URL env / Queue Protocol / `storage_uri` 추상화 등) 사전 적용 |
+| I-5 | **Auth 토큰 = 없음** | 127.0.0.1 바인딩 only. 단일 사용자 데스크톱 환경에서 token UX 비용이 더 큼 |
+| I-6 | **데이터 삭제 = Soft Delete** | `deleted_at` 마킹 + 명시 휴지통 비우기 시 hard delete + 파일 회수 |
+| I-7 | **PDF 본문 추출 = 3-tier fallback** | pypdf → Gemini multimodal (PdfWriter slice) → title-only |
+| I-8 | **Stage-aware retry** | 디스크 캐시(`output/<job>/{images,clips,narration.wav}`) 재사용해 가장 늦은 안전한 stage에서 재개 |
+| I-9 | **Test mode** | `SHORTIFY_TEST_MODE=1 + SHORTIFY_TEST_SCENE_COUNT=N` (기본 2). Imagen·Veo 호출량 14→N |
+| I-10 | **이미지에 글자 금지** | `NEG`에 no text/letters/labels/UI overlays. 자막은 ffmpeg burn-in |
+| I-11 | **영상 클립 무음** | Veo `generate_audio=False`. 나레이션은 ffmpeg 단계에서 입힘 |
+| I-12 | **conceptize 출력 언어 = 원본 자동 감지** | `lang=None` → "auto (match the source passage's language)" |
+| I-13 | **Caster identity-lock** | ref portrait 첨부 + prompt 앞뒤로 ref 2회 반복 + "This is identity, not style" 강조 |
+| I-14 | **Ref 자산 위치 = 로컬 default** | env `SHORTIFY_ASSETS_BASE_URL` 비면 로컬 절대경로. 있으면 외부 fetch + ref_cache |
+| I-15 | **Admin = 별도 Vite + React 프로젝트** | 포트 1421. 메인 앱과 독립. `/admin/state` 폴링 |
+| I-16 | **dev 모드 = Keychain 우회** | cargo ad-hoc 서명 변경마다 ACL prompt 뜨는 문제 회피. dev에선 `.env`만 사용 |
+| I-17 | **Single Source of Truth** | 모델 ID = `settings.py` / 캐스트 정의 = `db/seed.py SEED` / 코드 push마다 자동 upsert |
 
 ---
 
 ## 비용 추정
 
 ### 영상 1편 생산 (사용자가 BYOK일 때, 사용자 부담)
-- `gemini-3.1-flash-image-preview` $0.56 + `veo-3.1-generate-preview` $10.50 + `gemini-3.1-flash-tts-preview` $0.01 + `gemini-3.1-flash-lite-preview` $0.04 + `gemini-3.1-flash-preview` (정렬) $0.01 = **~$11/영상** (자세한 산식은 README의 비용표 참조)
+- `gemini-3.1-flash-image-preview` $0.56 (14장) + `veo-3.1-fast-generate-preview` $12.60 (14×6초) + `gemini-3.1-flash-tts-preview` $0.01 + `gemini-3.1-flash-lite-preview` (text + audio align) $0.05 = **~$13/영상**
+- 테스트 모드(2씬)로 dev 사이클 시 **~$2/편**까지 축소
+- 자세한 산식은 [README의 비용표](../../README.md#비용-영상-1편-byok-기준--gemini-api) 참조
 
 ### 우리 (개발사) 인프라 비용
 - 외부 백엔드 없음 → **거의 0원**
