@@ -52,6 +52,10 @@ class Settings:
     # 환경변수로 조정 가능: SHORTIFY_VIDEO_DURATION_SEC.
     video_duration_sec: int = int(os.environ.get("SHORTIFY_VIDEO_DURATION_SEC", "6"))
 
+    # Gemini TTS prebuilt voice 이름. 미지정 시 모델 기본 사용.
+    # 사용 가능한 prebuilt: Aoede, Charon, Fenrir, Kore, Puck, ... (SDK 문서 참고)
+    tts_voice: str = os.environ.get("SHORTIFY_TTS_VOICE", "Kore")
+
     # 테스트 모드 — Imagen / Veo 호출량을 줄여 dev 사이클을 빠르게.
     #   SHORTIFY_TEST_MODE=1   → test scene count 활성화
     #   SHORTIFY_TEST_SCENE_COUNT=N (기본 2)

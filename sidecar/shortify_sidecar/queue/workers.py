@@ -187,7 +187,7 @@ async def _handle_generate_video(task: Task) -> None:
             await _set_stage(s, job_id, 6, message="generating narration")
         narration = await pipeline.generate_narration(
             text=narration_text,
-            voice="ko_learning",
+            voice=settings().tts_voice,
             speed=1.0,
             job_id=job_id,
         )

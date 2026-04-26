@@ -219,7 +219,8 @@ async def image(
         safety_dump = ", ".join(
             f"{getattr(r, 'category', '?')}={getattr(r, 'probability', '?')}"
             for r in safety
-            if getattr(r, "blocked", False) or str(getattr(r, "probability", "")).upper() in {"HIGH", "MEDIUM"}
+            if getattr(r, "blocked", False)
+            or str(getattr(r, "probability", "")).upper() in {"HIGH", "MEDIUM"}
         )
         details = []
         if block_reason:
@@ -329,7 +330,7 @@ async def i2v(
                         f"Veo polling: transient errors did not recover ({msg})"
                     ) from e
                 # 지수 백오프 — 추가 대기
-                _t.sleep(min(30, 2 ** consecutive_err))
+                _t.sleep(min(30, 2**consecutive_err))
         # operation 자체가 실패로 끝났는지 먼저 확인 — done=True 라도 error 가 채워질 수 있음
         op_err = getattr(op, "error", None)
         if op_err:
@@ -376,9 +377,11 @@ async def i2v(
                 except Exception as e:  # noqa: BLE001
                     last_err = e
                     msg = str(e)
-                    if not any(s in msg for s in ("503", "504", "UNAVAILABLE", "Deadline")):
+                    if not any(
+                        s in msg for s in ("503", "504", "UNAVAILABLE", "Deadline")
+                    ):
                         raise
-                _t.sleep(2 ** attempt)
+                _t.sleep(2**attempt)
             if not data:
                 raise RuntimeError(
                     f"Veo: empty download from {uri}"
@@ -418,16 +421,29 @@ async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
 
     def _call():
         c = client()
+        from google.genai import types as gtypes  # type: ignore
+
+        # SDK SpeechConfig 는 voice_config / language_code / multi_speaker
+        # 셋만 받음. speaking_rate 는 필드가 없어서 ExtraForbidden 으로 거절됨.
+        # 속도 제어가 필요하면 모델이 아직 지원 안 함 → 향후 SDK 변경 시 추가.
+        speech_cfg = (
+            gtypes.SpeechConfig(
+                voice_config=gtypes.VoiceConfig(
+                    prebuilt_voice_config=gtypes.PrebuiltVoiceConfig(
+                        voice_name=voice
+                    )
+                )
+            )
+            if voice
+            else None
+        )
         resp = c.models.generate_content(
             model=settings().model_tts,
             contents=text_in,
-            config={
-                "response_modalities": ["AUDIO"],
-                "speech_config": {
-                    "voice_config": {"prebuilt_voice_config": {"voice_name": voice}},
-                    "speaking_rate": speed,
-                },
-            },
+            config=gtypes.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=speech_cfg,
+            ),
         )
         candidates = getattr(resp, "candidates", None) or []
         if not candidates:
@@ -445,19 +461,20 @@ async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     log.info(
-        "gemini.tts model=%s voice=%s speed=%.2f text_len=%d",
+        "gemini.tts model=%s voice=%s text_len=%d (speed=%.2f requested but unsupported by current SDK)",
         settings().model_tts,
-        voice,
-        speed,
+        voice or "(default)",
         len(text_in),
+        speed,
     )
     async with trace(
         kind="tts",
         model=settings().model_tts,
         request_preview=text_in,
         request_meta={
-            "voice": voice,
-            "speed": speed,
+            "voice": voice or None,
+            "speed_requested": speed,
+            "speed_supported": False,
             "text_len": len(text_in),
             "out": out_path.name,
         },
