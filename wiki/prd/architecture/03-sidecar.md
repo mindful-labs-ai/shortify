@@ -53,10 +53,11 @@ sidecar/
     ├── storage/
     │   └── paths.py               # ~/Library/Application Support/Shortify
     └── ext/
-        ├── claude.py
-        ├── seedream.py
-        ├── seedance.py
-        └── elevenlabs.py
+        ├── gemini_text.py     # gemini-3.1-flash-lite-preview
+        ├── gemini_image.py    # gemini-3.1-flash-image-preview
+        ├── veo_video.py       # veo-3.1-generate-preview
+        ├── gemini_tts.py      # gemini-3.1-flash-tts-preview
+        └── gemini_audio.py    # gemini-3.1-flash-preview (alignment)
 ```
 
 ## 부팅 시퀀스 (사이드카)
@@ -147,26 +148,35 @@ async def dispatch(task: Task):
 ## 외부 API 어댑터
 
 ```python
-# ext/claude.py
-class ClaudeClient:
+# ext/gemini_text.py — gemini-3.1-flash-lite-preview
+class GeminiTextClient:
+    MODEL = "gemini-3.1-flash-lite-preview"
     def __init__(self, api_key: str): ...
     async def conceptize(self, text: str) -> ConceptizedJSON: ...
     async def extract_toc(self, raw_text: str) -> list[TocItem]: ...
 
-# ext/seedream.py — BytePlus Seedream 4.0
-class SeedreamClient:
+# ext/gemini_image.py — gemini-3.1-flash-image-preview
+class GeminiImageClient:
+    MODEL = "gemini-3.1-flash-image-preview"
     async def generate_image(self, prompt: str, refs: list[Path]) -> Path: ...
 
-# ext/seedance.py — BytePlus Seedance I2V
-class SeedanceClient:
+# ext/veo_video.py — veo-3.1-generate-preview (I2V)
+class VeoVideoClient:
+    MODEL = "veo-3.1-generate-preview"
     async def i2v(self, image: Path, motion_preset: str) -> Path: ...
 
-# ext/elevenlabs.py
-class ElevenLabsClient:
+# ext/gemini_tts.py — gemini-3.1-flash-tts-preview
+class GeminiTtsClient:
+    MODEL = "gemini-3.1-flash-tts-preview"
     async def tts(self, text: str, voice: str, speed: float) -> Path: ...
+
+# ext/gemini_audio.py — gemini-3.1-flash-preview (audio understanding)
+class GeminiAudioClient:
+    MODEL = "gemini-3.1-flash-preview"
+    async def align(self, audio: Path, text: str) -> list[WordTiming]: ...
 ```
 
-API 키는 모두 Tauri Shell이 Keychain에서 읽어 환경변수로 사이드카에 주입 (사이드카는 Keychain 직접 접근 안 함 — 권한 분리).
+API 키는 단일 `GEMINI_API_KEY` 하나로 통합. Tauri Shell이 Keychain에서 읽어 환경변수로 사이드카에 주입 (사이드카는 Keychain 직접 접근 안 함 — 권한 분리).
 
 ## 에러 처리
 

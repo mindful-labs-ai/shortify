@@ -69,9 +69,9 @@ fn keychain_get(service: &str, key: &str) -> Result<Option<String>, String> {
 
 ```rust
 // 사이드카 spawn 시
-let claude_key = keychain_get("shortify", "anthropic")?.unwrap_or_default();
+let gemini_key = keychain_get("shortify", "gemini")?.unwrap_or_default();
 Command::new(sidecar_path)
-    .env("ANTHROPIC_API_KEY", claude_key)
+    .env("GEMINI_API_KEY", gemini_key)
     // ...
 ```
 
@@ -128,13 +128,14 @@ def safe_log(msg: str, **kwargs):
 
 ## 사용자 제어
 
-- 설정에서 "API 키 삭제" 버튼 (Keychain 항목 삭제)
-- 설정에서 "모든 데이터 삭제" 버튼 (`~/Library/.../Shortify` 전체 제거)
-- 영상 1편 단위 삭제 가능
+- 설정에서 "API 키 삭제" 버튼 (Keychain 항목 hard delete — 시크릿이라 soft delete 의미 없음)
+- 설정에서 "모든 데이터 삭제" 버튼 (활성 pdfs/jobs를 일괄 soft delete + Keychain 키 hard delete)
+- 영상 1편 단위 soft delete 가능 (휴지통에서 복원·완전 삭제 가능)
+- "휴지통 비우기"로 명시적 hard purge — 그 전까지 디스크 데이터 보존
 
 ## 알려진 한계 (v0)
 
-- App Store 미배포 → 일부 사용자에게 "신뢰할 수 없는 개발자" 경고 가능 (notarized면 우회 가능)
+- DMG 직배포 → 일부 사용자에게 "신뢰할 수 없는 개발자" 경고 가능 (notarized면 우회 가능)
 - 사용자가 자기 머신을 직접 통제하므로, 머신 자체가 침해된 경우 보호 불가 (Keychain은 잠긴 키체인 외에는 무력)
 - 외부 API 키 도난 시 책임 사용자 (사용량 알림 권장)
 
@@ -142,4 +143,4 @@ def safe_log(msg: str, **kwargs):
 
 - Sparkle 업데이트 채널 분리 (stable / beta)
 - 외부 API 호출 횟수 표시 (사용자가 비용 인지)
-- 로컬 모델 옵션 (Whisper는 이미 로컬, 향후 LLM도 로컬화 검토)
+- 로컬 모델 옵션 검토 (현재는 모든 추론·생성·정렬이 Google Gemini API)

@@ -19,18 +19,18 @@
 └────────────────────┬─────────────────────────────────────────┘
                      ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ 2. Sidecar build (PyInstaller, universal2)                   │
+│ 2. Sidecar build (PyInstaller, arm64 only)                   │
 │    cd sidecar                                                │
 │    python -m venv .venv && pip install -e .                  │
 │    pyinstaller PyInstaller.spec                              │
-│      --target-arch universal2                                │
+│      --target-arch arm64                                     │
 │      --noconfirm                                             │
-│    → bin/shortify-sidecar (단일 실행파일, ~150MB)             │
+│    → bin/shortify-sidecar (단일 실행파일, ~75MB)              │
 └────────────────────┬─────────────────────────────────────────┘
                      ▼
 ┌──────────────────────────────────────────────────────────────┐
 │ 3. Tauri bundle                                              │
-│    cargo tauri build --target universal-apple-darwin         │
+│    cargo tauri build --target aarch64-apple-darwin           │
 │    (사이드카 + ffmpeg + assets 포함)                          │
 │    → src-tauri/target/release/bundle/macos/Shortify.app      │
 └────────────────────┬─────────────────────────────────────────┘
@@ -104,7 +104,7 @@ a = Analysis(
         ('shortify_sidecar/prompts', 'shortify_sidecar/prompts'),
     ],
     hiddenimports=[
-        'faster_whisper',
+        'google.genai',
         'pydub',
         'fastapi',
         'uvicorn.workers',
@@ -114,7 +114,7 @@ a = Analysis(
 exe = EXE(
     pyz, a.scripts, [],
     name='shortify-sidecar',
-    target_arch='universal2',
+    target_arch='arm64',
     codesign_identity=None,  # codesign은 Tauri build 후 일괄 처리
     onefile=True,
 )
@@ -167,7 +167,7 @@ Hardened runtime 필수 (notarization 요구사항):
 
 ## ffmpeg 번들
 
-- 소스: 정적 빌드 (libass, libfreetype, fontconfig 포함된 universal2 바이너리)
+- 소스: 정적 빌드 (libass, libfreetype, fontconfig 포함된 arm64 바이너리, Apple Silicon 전용)
 - 위치: `assets/ffmpeg/ffmpeg`
 - 런타임 경로: `${BUNDLE}/Contents/Resources/ffmpeg`
 - 사이드카에 환경변수 `SHORTIFY_FFMPEG`로 전달

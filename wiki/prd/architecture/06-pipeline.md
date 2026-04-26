@@ -6,12 +6,12 @@
 |-------|------|------|------|-----------|-----|
 | 0 | `queued` | (job 생성) | — | — | 즉시 |
 | 1 | `extracting_section` | pdf_id + section_idx | section_text.txt | pypdf | ~5s |
-| 2 | `conceptizing` | section_text | conceptized.json | Claude | ~15s |
+| 2 | `conceptizing` | section_text | conceptized.json | `gemini-3.1-flash-lite-preview` | ~15s |
 | 3 | `awaiting_image_choice` | (사용자 입력 대기) | image_concept_slug | — | (사용자) |
-| 4 | `generating_images` | conceptized + image_concept | 14 PNG | Seedream | ~60s |
-| 5 | `generating_clips` | 14 PNG + motion preset | 14 MP4 | Seedance | ~5~7m |
-| 6 | `generating_narration` | conceptized.text | narration.mp3 | ElevenLabs | ~30s |
-| 7 | `aligning` | narration.mp3 + text | whisper_words.json | faster-whisper (local) | ~30s |
+| 4 | `generating_images` | conceptized + image_concept | 14 PNG | `gemini-3.1-flash-image-preview` | ~60s |
+| 5 | `generating_clips` | 14 PNG + motion preset | 14 MP4 | `veo-3.1-generate-preview` | ~5~7m |
+| 6 | `generating_narration` | conceptized.text | narration.mp3 | `gemini-3.1-flash-tts-preview` | ~30s |
+| 7 | `aligning` | narration.mp3 + text | aligned_words.json | `gemini-3.1-flash-preview` | ~30s |
 | 8 | `composing` | clips + narration + words + concept | final.mp4 | ffmpeg | ~2m |
 | 9 | `done` | — | output_video_path | — | — |
 | -1 | `failed` | error | — | — | — |
@@ -27,10 +27,10 @@ PDF + section ──► │ pipeline/        │ ──► section_text.txt
                   └──────────────────┘
                           │
                           ▼
-                  ┌──────────────────┐     ┌─────────────────┐
-                  │ pipeline/        │ ◄──► │ ext/claude.py  │
-                  │  conceptizer.py  │     └─────────────────┘
-                  └──────────────────┘
+                  ┌──────────────────┐     ┌─────────────────────┐
+                  │ pipeline/        │ ◄──► │ ext/gemini_text.py  │
+                  │  conceptizer.py  │     │ (flash-lite-preview) │
+                  └──────────────────┘     └─────────────────────┘
                           │ conceptized.json
                           ▼
                   ┌──────────────────┐
@@ -39,31 +39,31 @@ PDF + section ──► │ pipeline/        │ ──► section_text.txt
                   └──────────────────┘
                           │
                           ▼
-                  ┌──────────────────┐     ┌─────────────────┐
-                  │ pipeline/        │ ◄──► │ ext/seedream.py│
-                  │  image_gen.py    │     └─────────────────┘
-                  └──────────────────┘
+                  ┌──────────────────┐     ┌─────────────────────┐
+                  │ pipeline/        │ ◄──► │ ext/gemini_image.py │
+                  │  image_gen.py    │     │ (flash-image-preview)│
+                  └──────────────────┘     └─────────────────────┘
                           │ 14 PNG
                           ▼
-                  ┌──────────────────┐     ┌─────────────────┐
-                  │ pipeline/        │ ◄──► │ ext/seedance.py│
-                  │  video_gen.py    │     └─────────────────┘
-                  └──────────────────┘
+                  ┌──────────────────┐     ┌─────────────────────┐
+                  │ pipeline/        │ ◄──► │ ext/veo_video.py    │
+                  │  video_gen.py    │     │ (veo-3.1-generate)  │
+                  └──────────────────┘     └─────────────────────┘
                           │ 14 MP4
                           │
    conceptized.text ──┐   │
                       ▼   │
-                  ┌──────────────────┐     ┌─────────────────┐
-                  │ pipeline/        │ ◄──► │ ext/elevenlabs │
-                  │  narration_gen   │     └─────────────────┘
-                  └──────────────────┘
+                  ┌──────────────────┐     ┌─────────────────────┐
+                  │ pipeline/        │ ◄──► │ ext/gemini_tts.py   │
+                  │  narration_gen   │     │ (flash-tts-preview)  │
+                  └──────────────────┘     └─────────────────────┘
                           │ narration.mp3
                           ▼
-                  ┌──────────────────┐
-                  │ pipeline/        │  (faster-whisper, local)
-                  │  alignment.py    │
-                  └──────────────────┘
-                          │ whisper_words.json
+                  ┌──────────────────┐     ┌─────────────────────┐
+                  │ pipeline/        │ ◄──► │ ext/gemini_audio.py │
+                  │  alignment.py    │     │ (flash-preview)      │
+                  └──────────────────┘     └─────────────────────┘
+                          │ aligned_words.json
                           ▼
                   ┌──────────────────┐
                   │ pipeline/        │
@@ -95,7 +95,7 @@ def extract_section(pdf_path: Path, section_idx: int, toc: list[TocItem]) -> str
 ### `conceptizer.conceptize()`
 ```python
 async def conceptize(text: str, lang: str = "ko") -> ConceptizedJSON:
-    """Claude로 4비트 학습 구조 추출."""
+    """`gemini-3.1-flash-lite-preview`로 4비트 학습 구조 추출."""
 ```
 프롬프트는 `prompts/conceptizer.md` (별도 파일). 출력 스키마는 [04-data-model.md](./04-data-model.md) 참고.
 
@@ -108,27 +108,27 @@ def split(conceptized: ConceptizedJSON, n_scenes: int = 14) -> list[SceneSpec]:
 ### `image_gen.generate()`
 ```python
 async def generate(scene: SceneSpec, concept: ImageConcept, refs: list[Path]) -> Path:
-    """Seedream 4.0 호출 → 1024×1024 PNG."""
+    """`gemini-3.1-flash-image-preview` 호출 → 1024×1024 PNG."""
 ```
-프롬프트는 `concept.seedream_style_preset` + scene 디렉션 + 부정 프롬프트. 동시 요청 ≤ 4.
+프롬프트는 `concept.image_style_preset` + scene 디렉션 + 부정 프롬프트. 동시 요청 ≤ 4.
 
 ### `video_gen.i2v()`
 ```python
 async def i2v(image: Path, motion: str, duration_sec: int = 5) -> Path:
-    """Seedance I2V → 5초 MP4."""
+    """`veo-3.1-generate-preview` I2V → 5초 MP4."""
 ```
 
 ### `narration_gen.tts()`
 ```python
 async def tts(text: str, voice: str, speed: float) -> Path:
-    """ElevenLabs Korean → MP3."""
+    """`gemini-3.1-flash-tts-preview` Korean → MP3."""
 ```
 shortify 기본 voice는 학습형 (속도 1.0~1.1x).
 
 ### `alignment.align_words()`
 ```python
-def align_words(audio: Path, text: str) -> list[Word]:
-    """faster-whisper (medium 모델, CoreML 가속) → word-level timestamps."""
+async def align_words(audio: Path, text: str) -> list[Word]:
+    """`gemini-3.1-flash-preview` 오디오 이해 → word-level timestamps."""
 ```
 
 ### `rhythm_cut.plan()`
@@ -171,11 +171,11 @@ def compose_final(
 
 | 실패 | 처리 |
 |------|------|
-| Seedream 일시 오류 | 지수 백오프 3회 재시도 |
-| Seedream 컨텐츠 정책 거부 | 프롬프트 자동 sanitize 후 1회 재시도, 실패 시 fallback 정적 이미지 |
-| Seedance 5초 클립 깨짐 | 해당 씬만 재생성 |
-| ElevenLabs 음성 끊김 | 전체 재생성 (TTS는 빠름) |
-| Whisper 정렬 매칭 실패 | char-ratio 폴백 (video-cli 검증된 방식) |
+| `gemini-3.1-flash-image-preview` 일시 오류 | 지수 백오프 3회 재시도 |
+| `gemini-3.1-flash-image-preview` 컨텐츠 정책 거부 | 프롬프트 자동 sanitize 후 1회 재시도, 실패 시 fallback 정적 이미지 |
+| `veo-3.1-generate-preview` 5초 클립 깨짐 | 해당 씬만 재생성 |
+| `gemini-3.1-flash-tts-preview` 음성 끊김 | 전체 재생성 (TTS는 빠름) |
+| `gemini-3.1-flash-preview` 정렬 매칭 실패 | char-ratio 폴백 (video-cli 검증된 방식) |
 | ffmpeg 죽음 | stderr 로그 캡처, stage = -1, 사용자 재시도 가능 |
 
 ## 출력물
@@ -185,7 +185,7 @@ output/<job_id>/
 ├── images/scene_001.png ... scene_014.png
 ├── clips/scene_001.mp4 ...
 ├── narration.mp3
-├── whisper_words.json
+├── aligned_words.json
 ├── rhythm_plan.json
 ├── overlays/                # subtitle ASS, hook PNG, footer PNG
 ├── final.mp4                ← 사용자 결과물

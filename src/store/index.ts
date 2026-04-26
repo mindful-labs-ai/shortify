@@ -1,21 +1,43 @@
 import { create } from "zustand";
 import type { ImageConcept, Job, Pdf } from "../lib/api";
 
+export type View =
+  | "drop"
+  | "toc"
+  | "image_picker"
+  | "progress"
+  | "library"
+  | "settings";
+
 type AppState = {
+  view: View;
+  setView: (v: View) => void;
+
   pdf: Pdf | null;
-  jobs: Job[];
-  imageConcepts: ImageConcept[];
   setPdf: (p: Pdf | null) => void;
+
+  pendingJobIds: string[]; // 사용자가 막 만든 job 묶음 (image picker 대상)
+  setPendingJobIds: (ids: string[]) => void;
+
+  jobs: Job[];
   setJobs: (j: Job[]) => void;
   upsertJob: (j: Job) => void;
+
+  imageConcepts: ImageConcept[];
   setImageConcepts: (c: ImageConcept[]) => void;
 };
 
 export const useAppStore = create<AppState>((set) => ({
+  view: "drop",
+  setView: (view) => set({ view }),
+
   pdf: null,
-  jobs: [],
-  imageConcepts: [],
   setPdf: (pdf) => set({ pdf }),
+
+  pendingJobIds: [],
+  setPendingJobIds: (pendingJobIds) => set({ pendingJobIds }),
+
+  jobs: [],
   setJobs: (jobs) => set({ jobs }),
   upsertJob: (j) =>
     set((s) => ({
@@ -23,5 +45,7 @@ export const useAppStore = create<AppState>((set) => ({
         ? s.jobs.map((x) => (x.id === j.id ? j : x))
         : [...s.jobs, j],
     })),
+
+  imageConcepts: [],
   setImageConcepts: (imageConcepts) => set({ imageConcepts }),
 }));

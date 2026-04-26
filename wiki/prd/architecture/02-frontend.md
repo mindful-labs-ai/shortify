@@ -108,7 +108,7 @@ export function useJobStream(jobId: string) {
 
 ```ts
 import { invoke } from '@tauri-apps/api/core';
-const apiKey = await invoke<string>('keychain_get', { service: 'shortify', key: 'anthropic' });
+const apiKey = await invoke<string>('keychain_get', { service: 'shortify', key: 'gemini' });
 ```
 
 ## 부팅 시퀀스
