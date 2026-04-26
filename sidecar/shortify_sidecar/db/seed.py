@@ -195,21 +195,29 @@ async def seed_image_concepts(session: AsyncSession) -> int:
     assets_root = _project_root() / "assets" / "image_concepts"
     seed_slugs = {s["slug"] for s in SEED}
 
-    # 사용자 결정: ref 경로는 GitHub raw URL 로 저장 (origin/main).
-    # _safe_refs() 가 http(s):// 를 자동으로 감지해 캐시 후 inline 첨부한다.
-    # SHORTIFY_ASSETS_BASE_URL 로 fork/branch 변경 가능.
+    # 사용자 결정: ref 경로는 S3 public read URL 로 저장.
+    # 기본 base 는 region-specific (ap-northeast-2) — 일반 endpoint 는 307
+    # redirect 가 와서 한 hop 더 듦. _safe_refs() 의 urllib 는 redirect 도
+    # 자동으로 따라가므로 둘 다 동작하지만 region 명시가 빠름.
+    # SHORTIFY_ASSETS_BASE_URL 로 다른 bucket / 다른 host 로 변경 가능.
     import os as _os
 
     base_url = _os.environ.get(
         "SHORTIFY_ASSETS_BASE_URL",
-        "https://raw.githubusercontent.com/mindful-labs-ai/shortify/main/assets",
+        "https://hackathon-shortify.s3.ap-northeast-2.amazonaws.com",
     ).rstrip("/")
 
     for s in SEED:
         slug_dir = assets_root / s["slug"]
         preview = slug_dir / "preview.png"
-        # 로컬 ref_*.png 파일 이름만 가져와 GitHub raw URL 로 변환.
+        # 로컬 ref_*.png 파일 이름만 가져와 base_url 기반 URL 로 변환.
+        # 자산은 외부 (S3 / GitHub raw) 에 있고 로컬 파일은 시드 시점의 이름
+        # 결정 용으로만 사용된다. 만약 로컬에 ref_*.png 가 없으면 fallback 으로
+        # ref_main.png 만 가정해서 single ref 라도 보낸다 (디자이너가 자산만
+        # 올리고 코드 sync 가 늦어질 때 대응).
         ref_names = sorted(p.name for p in slug_dir.glob("ref_*.png"))
+        if not ref_names:
+            ref_names = ["ref_main.png"]
         refs = [f"{base_url}/image_concepts/{s['slug']}/{n}" for n in ref_names]
 
         if s["slug"] in existing_slugs:
