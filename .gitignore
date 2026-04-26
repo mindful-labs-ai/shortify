@@ -2,7 +2,6 @@
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon?
 ._*
 .Spotlight-V100
 .Trashes
@@ -57,6 +56,9 @@ pnpm-debug.log*
 coverage/
 *.lcov
 .nyc_output
+
+# ───────────── TypeScript build info ─────────────
+*.tsbuildinfo
 
 # ───────────── Rust / Cargo / Tauri ─────────────
 src-tauri/target/
@@ -158,3 +160,4 @@ sidecar/.pytest_cache/
 .omc/logs/
 .omc/research/
 .claude/local/
+**/.omc/

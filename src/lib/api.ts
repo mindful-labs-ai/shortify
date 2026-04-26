@@ -28,7 +28,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // ─────────── 도메인 타입 (sidecar 스키마와 동기화) ───────────
 export type TocItem = { idx: number; title: string; page_start: number; page_end: number };
 export type Pdf = { id: string; filename: string; page_count: number; toc: TocItem[] };
-export type ImageConcept = { slug: string; name: string; description: string; preview_path: string };
+export type PdfSummary = {
+  id: string;
+  filename: string;
+  page_count: number | null;
+  size_bytes: number | null;
+  toc_count: number;
+  has_toc: boolean;
+  created_at: string | null;
+  deleted_at: string | null;
+};
+export type UploadResult = {
+  pdf_id: string;
+  page_count: number | null;
+  deduped: boolean;
+  toc_present: boolean;
+};
+export type ImageConcept = { slug: string; name: string; description: string; preview_url: string };
 export type Job = {
   id: string;
   pdf_id: string;
@@ -48,8 +64,10 @@ export const api = {
   uploadPdf: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return request<{ pdf_id: string }>("/upload", { method: "POST", body: fd });
+    return request<UploadResult>("/upload", { method: "POST", body: fd });
   },
+
+  listPdfs: () => request<{ pdfs: PdfSummary[] }>("/pdfs"),
 
   getToc: (pdfId: string) => request<Pdf>(`/pdfs/${pdfId}/toc`),
 
@@ -60,7 +78,7 @@ export const api = {
       body: JSON.stringify({ pdf_id: pdfId, sections }),
     }),
 
-  listJobs: () => request<Job[]>("/jobs"),
+  listJobs: () => request<{ jobs: Job[] }>("/jobs"),
   getJob: (id: string) => request<Job>(`/jobs/${id}`),
 
   selectImage: (id: string, slug: string) =>
@@ -72,10 +90,35 @@ export const api = {
 
   retryJob: (id: string) => request<Job>(`/jobs/${id}/retry`, { method: "POST" }),
 
+  // Soft delete: 휴지통 이동, 파일 보존. 기본 listJobs 응답에서 제외됨.
   deleteJob: (id: string) =>
     request<{ ok: true }>(`/jobs/${id}`, { method: "DELETE" }),
 
-  imageConcepts: () => request<ImageConcept[]>("/image-concepts"),
+  // 휴지통에서 복원 (deleted_at = NULL).
+  restoreJob: (id: string) =>
+    request<Job>(`/jobs/${id}/restore`, { method: "POST" }),
+
+  // 휴지통 비우기 — 비가역 hard delete + 파일 회수.
+  emptyTrash: () =>
+    request<{ purged_jobs: number; purged_pdfs: number; freed_bytes: number }>(
+      "/trash",
+      { method: "DELETE" },
+    ),
+
+  imageConcepts: async () => {
+    const r = await request<{ concepts: ImageConcept[] }>("/image-concepts");
+    if (!config) throw new Error("API config not initialized");
+    const base = config.baseUrl;
+    return {
+      concepts: r.concepts.map((c) => ({
+        ...c,
+        // 사이드카가 상대 경로를 보내주므로 baseUrl 을 붙여 절대 URL 로.
+        preview_url: c.preview_url.startsWith("http")
+          ? c.preview_url
+          : `${base}${c.preview_url}`,
+      })),
+    };
+  },
 
   // SSE는 sse.ts 사용 (EventSource는 헤더 못 붙이므로 토큰을 쿼리로)
   jobStreamUrl: (id: string) => {

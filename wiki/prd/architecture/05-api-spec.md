@@ -115,7 +115,7 @@ Accept: text/event-stream
 서버 → 이벤트 (한 줄 = 1 event):
 data: {"job_id":"01J...","stage":1,"message":"Extracting section text"}
 
-data: {"job_id":"01J...","stage":2,"message":"Conceptizing with Claude"}
+data: {"job_id":"01J...","stage":2,"message":"Conceptizing with gemini-3.1-flash-lite-preview"}
 
 data: {"job_id":"01J...","stage":3,"message":"Awaiting image concept selection"}
 
@@ -151,14 +151,41 @@ POST /jobs/{job_id}/retry
 
 `failed` 상태에서만 허용. 실패한 stage 이전부터 다시 시작 (자동 판단).
 
-### 삭제
+### 삭제 (Soft)
 
 ```
 DELETE /jobs/{job_id}
 → 204
 ```
 
-연결된 `output/<job_id>/` 폴더와 DB 행 모두 삭제.
+`deleted_at = now()` 마킹만. **파일·DB 행 보존**. 기본 `GET /jobs` 응답에서 제외된다.
+
+### 복원
+
+```
+POST /jobs/{job_id}/restore
+→ 200 { "id": "01J...", "deleted_at": null }
+```
+
+`deleted_at = NULL`로 되돌린다. 휴지통에 있을 때만 200, 아니면 404.
+
+### 휴지통 조회
+
+```
+GET /jobs?include_deleted=true&only_deleted=true
+→ 200 { "jobs": [...] }
+```
+
+soft delete된 항목만 (또는 활성+삭제 모두) 반환.
+
+### 휴지통 비우기 (Hard Purge)
+
+```
+DELETE /trash
+→ 200 { "purged_jobs": 12, "purged_pdfs": 3, "freed_bytes": 524288000 }
+```
+
+`deleted_at IS NOT NULL`인 모든 pdfs/jobs를 hard delete + 연결된 파일(`pdfs/<id>.pdf`, `output/<id>/`) 회수. 비가역.
 
 ### 이미지 컨셉
 
@@ -200,7 +227,7 @@ GET /image-concepts
 | 409 | `INVALID_STAGE_TRANSITION` | 예: stage=4인데 select-image 호출 |
 | 422 | `MAX_SECTIONS_EXCEEDED` | sections 길이 > 5 |
 | 500 | `INTERNAL_ERROR` | 서버 오류 |
-| 502 | `EXTERNAL_API_FAILED` | Claude/Seedream 등 실패 (재시도 후 최종 실패) |
+| 502 | `EXTERNAL_API_FAILED` | Google Gemini / Veo 호출 실패 (재시도 후 최종 실패) |
 
 ## SSE 재연결
 
@@ -219,7 +246,8 @@ data: {...}
 ## Rate Limit
 
 - 로컬 단일 사용자라 글로벌 rate limit 없음
-- 단, 외부 API (Claude, BytePlus) 호출은 사이드카가 자체 토큰 버킷으로 제어
-  - Seedream: 동시 요청 ≤ 4
-  - Seedance: 동시 요청 ≤ 2 (비싸고 느림)
-  - Claude: 동시 요청 ≤ 3
+- 단, 외부 API (Google Gemini / Veo) 호출은 사이드카가 자체 토큰 버킷으로 제어
+  - `gemini-3.1-flash-image-preview`: 동시 요청 ≤ 4
+  - `veo-3.1-generate-preview`: 동시 요청 ≤ 2 (비싸고 느림)
+  - `gemini-3.1-flash-lite-preview`: 동시 요청 ≤ 3
+  - `gemini-3.1-flash-tts-preview` / `gemini-3.1-flash-preview` (정렬): 동시 요청 ≤ 2
