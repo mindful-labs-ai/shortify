@@ -48,6 +48,10 @@ class Settings:
     model_tts: str = "gemini-3.1-flash-tts-preview"
     model_audio: str = "gemini-3.1-flash-preview"
 
+    # Veo I2V duration. 모델별 허용 범위 다름 (현 Veo 3.x 류는 4~8 inclusive).
+    # 환경변수로 조정 가능: SHORTIFY_VIDEO_DURATION_SEC.
+    video_duration_sec: int = int(os.environ.get("SHORTIFY_VIDEO_DURATION_SEC", "6"))
+
 
 @lru_cache(maxsize=1)
 def settings() -> Settings:

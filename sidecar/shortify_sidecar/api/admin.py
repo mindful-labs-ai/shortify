@@ -3,12 +3,13 @@
 브라우저 어드민 페이지(``/admin/index.html`` — 별도 프로젝트)가 폴링하는
 한 방 상태 dump.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter
 from sqlalchemy import desc, func, select
 
-from ..db.models import Job, JobEvent, QueueTask
+from ..db.models import AiTrace, Job, JobEvent, QueueTask
 from ..db.session import session_factory
 from ..settings import settings
 
@@ -16,7 +17,12 @@ router = APIRouter(prefix="/admin")
 
 
 @router.get("/state")
-async def admin_state(events_limit: int = 100, queue_limit: int = 30, jobs_limit: int = 50) -> dict:
+async def admin_state(
+    events_limit: int = 100,
+    queue_limit: int = 30,
+    jobs_limit: int = 50,
+    traces_limit: int = 100,
+) -> dict:
     async with session_factory()() as s:
         # 큐 status counts
         rows = (
@@ -27,22 +33,44 @@ async def admin_state(events_limit: int = 100, queue_limit: int = 30, jobs_limit
         counts = {row[0]: row[1] for row in rows}
 
         recent_tasks = (
-            await s.execute(
-                select(QueueTask).order_by(desc(QueueTask.id)).limit(queue_limit)
+            (
+                await s.execute(
+                    select(QueueTask).order_by(desc(QueueTask.id)).limit(queue_limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         events = (
-            await s.execute(
-                select(JobEvent).order_by(desc(JobEvent.id)).limit(events_limit)
+            (
+                await s.execute(
+                    select(JobEvent).order_by(desc(JobEvent.id)).limit(events_limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         jobs = (
-            await s.execute(
-                select(Job).order_by(desc(Job.created_at)).limit(jobs_limit)
+            (
+                await s.execute(
+                    select(Job).order_by(desc(Job.created_at)).limit(jobs_limit)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
+
+        traces = (
+            (
+                await s.execute(
+                    select(AiTrace).order_by(desc(AiTrace.id)).limit(traces_limit)
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     return {
         "config": {
@@ -69,7 +97,9 @@ async def admin_state(events_limit: int = 100, queue_limit: int = 30, jobs_limit
                     "status": t.status,
                     "attempts": t.attempts,
                     "max_attempts": t.max_attempts,
-                    "scheduled_at": t.scheduled_at.isoformat() if t.scheduled_at else None,
+                    "scheduled_at": (
+                        t.scheduled_at.isoformat() if t.scheduled_at else None
+                    ),
                     "started_at": t.started_at.isoformat() if t.started_at else None,
                     "finished_at": t.finished_at.isoformat() if t.finished_at else None,
                     "worker_id": t.worker_id,
@@ -105,5 +135,23 @@ async def admin_state(events_limit: int = 100, queue_limit: int = 30, jobs_limit
                 "updated_at": j.updated_at.isoformat(),
             }
             for j in jobs
+        ],
+        "traces": [
+            {
+                "id": t.id,
+                "kind": t.kind,
+                "model": t.model,
+                "job_id": t.job_id,
+                "status": t.status,
+                "request_preview": t.request_preview,
+                "request_meta": t.request_meta or {},
+                "response_preview": t.response_preview,
+                "response_meta": t.response_meta or {},
+                "error": t.error,
+                "started_at": t.started_at.isoformat() if t.started_at else None,
+                "finished_at": t.finished_at.isoformat() if t.finished_at else None,
+                "duration_ms": t.duration_ms,
+            }
+            for t in traces
         ],
     }

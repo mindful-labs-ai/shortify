@@ -46,6 +46,31 @@ export type AdminJob = {
   updated_at: string;
 };
 
+export type AiTraceKind =
+  | "text_json"
+  | "pdf_toc"
+  | "text"
+  | "image"
+  | "i2v"
+  | "tts"
+  | "align";
+
+export type AiTrace = {
+  id: number;
+  kind: AiTraceKind | string;
+  model: string;
+  job_id: string | null;
+  status: "running" | "done" | "failed";
+  request_preview: string | null;
+  request_meta: Record<string, unknown>;
+  response_preview: string | null;
+  response_meta: Record<string, unknown>;
+  error: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  duration_ms: number | null;
+};
+
 export type AdminState = {
   config: AdminConfig;
   queue: {
@@ -54,6 +79,7 @@ export type AdminState = {
   };
   events: AdminEvent[];
   jobs: AdminJob[];
+  traces: AiTrace[];
 };
 
 export const STAGE_LABEL: Record<number, string> = {

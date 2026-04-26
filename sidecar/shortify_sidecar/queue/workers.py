@@ -5,6 +5,7 @@
   - conceptize       → pipeline.conceptizer.conceptize + scene_splitter.split
   - generate_video   → pipeline (image_gen → video_gen → narration → align → rhythm → compose)
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -20,6 +21,7 @@ from .. import notify
 from ..db.models import Job, JobEvent, Pdf
 from ..db.session import session_factory
 from ..pipeline import get_pipeline
+from ..pipeline._trace import current_job_id
 from .base import Task, TaskQueue
 
 log = logging.getLogger("shortify.worker")
@@ -55,7 +57,9 @@ async def _set_stage(
     await s.commit()
     log.info(
         "  job %s → stage %d (%s)%s",
-        job_id, stage, message or "",
+        job_id,
+        stage,
+        message or "",
         f" error={error}" if error else "",
     )
     await notify.publish(job_id, stage=stage, message=message)
@@ -107,6 +111,7 @@ async def _handle_conceptize(task: Task) -> None:
             )
     if job.image_concept_slug:
         from .sqlite_impl import SqliteTaskQueue
+
         await SqliteTaskQueue().enqueue("generate_video", {"job_id": job_id})
 
 
@@ -123,7 +128,9 @@ async def _handle_generate_video(task: Task) -> None:
     scenes = pipeline.split_scenes(job.conceptized_json)
     async with session_factory()() as s:
         await _set_stage(s, job_id, 4, message="generating images")
-    images = await pipeline.generate_images(scenes, job.image_concept_slug, job_id=job_id)
+    images = await pipeline.generate_images(
+        scenes, job.image_concept_slug, job_id=job_id
+    )
 
     async with session_factory()() as s:
         await _set_stage(s, job_id, 5, message="generating clips")
@@ -140,7 +147,9 @@ async def _handle_generate_video(task: Task) -> None:
 
     async with session_factory()() as s:
         await _set_stage(s, job_id, 7, message="aligning words")
-    words = await pipeline.align_words(narration, " ".join(b["text"] for b in job.conceptized_json["beats"]))
+    words = await pipeline.align_words(
+        narration, " ".join(b["text"] for b in job.conceptized_json["beats"])
+    )
 
     async with session_factory()() as s:
         await _set_stage(s, job_id, 8, message="composing")
@@ -201,28 +210,55 @@ class WorkerPool:
                 continue
             handler = HANDLERS.get(task.task_type)
             if handler is None:
-                log.error("[%s] unknown task_type %s (id=%s)", worker_id, task.task_type, task.id)
-                await self.queue.mark_failed(task.id, error=f"unknown task_type {task.task_type}", retry=False)
+                log.error(
+                    "[%s] unknown task_type %s (id=%s)",
+                    worker_id,
+                    task.task_type,
+                    task.id,
+                )
+                await self.queue.mark_failed(
+                    task.id, error=f"unknown task_type {task.task_type}", retry=False
+                )
                 continue
             t0 = time.perf_counter()
             log.info(
                 "[%s] picked %s (id=%s, attempt=%d, payload=%s)",
-                worker_id, task.task_type, task.id, task.attempts, task.payload,
+                worker_id,
+                task.task_type,
+                task.id,
+                task.attempts,
+                task.payload,
             )
+            # ai_traces 에 job_id 를 자동 주입하기 위해 ContextVar 를 세팅.
+            payload_job_id = (
+                task.payload.get("job_id") if isinstance(task.payload, dict) else None
+            )
+            ctx_token = current_job_id.set(payload_job_id)
             try:
                 await handler(task)
                 await self.queue.mark_done(task.id)
                 log.info(
                     "[%s] done   %s (id=%s, took=%.2fs)",
-                    worker_id, task.task_type, task.id, time.perf_counter() - t0,
+                    worker_id,
+                    task.task_type,
+                    task.id,
+                    time.perf_counter() - t0,
                 )
             except Exception as e:  # noqa: BLE001
                 log.exception(
                     "[%s] FAILED %s (id=%s, took=%.2fs): %s",
-                    worker_id, task.task_type, task.id, time.perf_counter() - t0, e,
+                    worker_id,
+                    task.task_type,
+                    task.id,
+                    time.perf_counter() - t0,
+                    e,
                 )
                 job_id = task.payload.get("job_id")
                 if job_id:
                     async with session_factory()() as s:
                         await _set_stage(s, job_id, -1, message="failed", error=str(e))
-                await self.queue.mark_failed(task.id, error=str(e), retry=task.attempts < task.max_attempts)
+                await self.queue.mark_failed(
+                    task.id, error=str(e), retry=task.attempts < task.max_attempts
+                )
+            finally:
+                current_job_id.reset(ctx_token)

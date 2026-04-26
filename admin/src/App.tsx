@@ -4,6 +4,7 @@ import EventsPanel from "./components/EventsPanel";
 import JobsPanel from "./components/JobsPanel";
 import QueuePanel from "./components/QueuePanel";
 import StatBar from "./components/StatBar";
+import TracesPanel from "./components/TracesPanel";
 import { fetchState } from "./lib/api";
 import type { AdminState } from "./types";
 
@@ -123,6 +124,13 @@ export default function App() {
                   selectedJobId={selectedJobId}
                 />
               </div>
+            </div>
+
+            <div className="mt-6">
+              <TracesPanel
+                traces={data.traces ?? []}
+                selectedJobId={selectedJobId}
+              />
             </div>
           </>
         ) : (

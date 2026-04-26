@@ -3,12 +3,13 @@
 Soft delete: ``deleted_at`` 컬럼이 ``None`` 이면 활성, ISO 시각이면 휴지통.
 PG 이전 호환: raw SQL/SQLite-only 기능 사용 안 함, datetime은 Python 측에서 default 주입.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Index
+from sqlalchemy import Index, Text
 from sqlmodel import Column, Field, JSON, SQLModel
 
 
@@ -138,3 +139,36 @@ class Prompt(SQLModel, table=True):
     description: Optional[str] = None
     variables: Optional[list] = Field(default=None, sa_column=Column(JSON))
     updated_at: datetime = Field(default_factory=_utcnow)
+
+
+class AiTrace(SQLModel, table=True):
+    """모든 외부 AI 호출(Gemini 등) 1건당 1행. 무엇을 보냈고 무엇을 받았는지 기록.
+
+    - ``kind``: ``text_json`` | ``pdf_toc`` | ``text`` | ``image`` | ``i2v`` | ``tts`` | ``align``
+    - ``status``: ``running`` (insert 시점) → ``done`` 또는 ``failed`` (응답 시점)
+    - ``request_preview`` / ``response_preview``: 처음 ~2000자만, 이후 truncated 표시
+    - ``request_meta`` / ``response_meta``: 파일 경로, 사이즈, voice, duration_sec 등 구조화된 부가정보
+    - ``job_id``: ContextVar 로 worker 가 주입. PDF TOC 등 job 이전 단계는 None
+    """
+
+    __tablename__ = "ai_traces"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    kind: str
+    model: str
+    job_id: Optional[str] = None  # FK 미지정 (PDF TOC 등 job 이전 호출 허용)
+    status: str = "running"
+    request_preview: Optional[str] = Field(default=None, sa_column=Column(Text))
+    request_meta: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    response_preview: Optional[str] = Field(default=None, sa_column=Column(Text))
+    response_meta: dict = Field(default_factory=dict, sa_column=Column(JSON))
+    error: Optional[str] = None
+    started_at: datetime = Field(default_factory=_utcnow)
+    finished_at: Optional[datetime] = None
+    duration_ms: Optional[int] = None
+
+    __table_args__ = (
+        Index("idx_ai_traces_started", "started_at"),
+        Index("idx_ai_traces_job", "job_id", "started_at"),
+        Index("idx_ai_traces_kind", "kind", "started_at"),
+    )

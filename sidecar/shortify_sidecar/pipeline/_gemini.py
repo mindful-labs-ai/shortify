@@ -233,9 +233,17 @@ async def image(
 
 
 async def i2v(
-    image_path: Path, motion_prompt: str, out_path: Path, *, duration_sec: int = 5
+    image_path: Path,
+    motion_prompt: str,
+    out_path: Path,
+    *,
+    duration_sec: int | None = None,
 ) -> Path:
-    """Veo I2V — 이미지 1장 → MP4."""
+    """Veo I2V — 이미지 1장 → MP4. duration_sec 미지정 시 settings 기본값."""
+
+    # 모델 허용 범위 (Veo 3.x: 4~8 inclusive) 안으로 클램프.
+    raw = duration_sec if duration_sec is not None else settings().video_duration_sec
+    safe_dur = max(4, min(8, int(raw)))
 
     def _call():
         c = client()
@@ -251,7 +259,7 @@ async def i2v(
             prompt=motion_prompt,
             image=img,
             config=gtypes.GenerateVideosConfig(
-                duration_seconds=duration_sec,
+                duration_seconds=safe_dur,
                 aspect_ratio="9:16",
             ),
         )
@@ -267,9 +275,10 @@ async def i2v(
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     log.info(
-        "gemini.i2v model=%s in=%s dur=%ds",
+        "gemini.i2v model=%s in=%s dur=%ds (requested=%s)",
         settings().model_video,
         image_path.name,
+        safe_dur,
         duration_sec,
     )
     async with trace(
@@ -279,7 +288,8 @@ async def i2v(
         request_meta={
             "image": image_path.name,
             "out": out_path.name,
-            "duration_sec": duration_sec,
+            "duration_sec": safe_dur,
+            "duration_sec_requested": duration_sec,
             "aspect_ratio": "9:16",
         },
     ) as tr:
