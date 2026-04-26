@@ -32,14 +32,110 @@
   "hotPaths": [
     {
       "path": "README.md",
-      "accessCount": 18,
-      "lastAccessed": 1777166378841,
+      "accessCount": 19,
+      "lastAccessed": 1777168472889,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/02-logo.md",
+      "accessCount": 9,
+      "lastAccessed": 1777170660660,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/README.md",
+      "accessCount": 9,
+      "lastAccessed": 1777176331847,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/character/01-bible.md",
+      "accessCount": 8,
+      "lastAccessed": 1777169924849,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/05-next-steps.md",
+      "accessCount": 8,
+      "lastAccessed": 1777176340454,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/character/02-usage.md",
+      "accessCount": 7,
+      "lastAccessed": 1777169979368,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/02-tokens.md",
+      "accessCount": 7,
+      "lastAccessed": 1777176073700,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/03-components.md",
+      "accessCount": 6,
+      "lastAccessed": 1777176159329,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/03-color.md",
+      "accessCount": 5,
+      "lastAccessed": 1777170035814,
       "type": "file"
     },
     {
       "path": "wiki/members.md",
       "accessCount": 4,
       "lastAccessed": 1777165982265,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/01-principles.md",
+      "accessCount": 4,
+      "lastAccessed": 1777168773199,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/01-identity.md",
+      "accessCount": 3,
+      "lastAccessed": 1777168534930,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/04-typography.md",
+      "accessCount": 3,
+      "lastAccessed": 1777168635209,
+      "type": "file"
+    },
+    {
+      "path": "design/character/README.md",
+      "accessCount": 3,
+      "lastAccessed": 1777170083753,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design",
+      "accessCount": 3,
+      "lastAccessed": 1777170089227,
+      "type": "directory"
+    },
+    {
+      "path": "design/brand/README.md",
+      "accessCount": 3,
+      "lastAccessed": 1777170674263,
+      "type": "file"
+    },
+    {
+      "path": "design/ui/shortify-html-design",
+      "accessCount": 3,
+      "lastAccessed": 1777175995337,
+      "type": "directory"
+    },
+    {
+      "path": "design/ui/README.md",
+      "accessCount": 3,
+      "lastAccessed": 1777176319080,
       "type": "file"
     },
     {
@@ -61,6 +157,18 @@
       "type": "file"
     },
     {
+      "path": "design/README.md",
+      "accessCount": 2,
+      "lastAccessed": 1777168477872,
+      "type": "file"
+    },
+    {
+      "path": "wiki/README.md",
+      "accessCount": 2,
+      "lastAccessed": 1777168478589,
+      "type": "file"
+    },
+    {
       "path": "wiki/prd/IDEA.md",
       "accessCount": 1,
       "lastAccessed": 1777164534794,
@@ -79,100 +187,94 @@
       "type": "file"
     },
     {
-      "path": "design/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777166127349,
-      "type": "file"
-    },
-    {
-      "path": "design/brand/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777166135158,
-      "type": "file"
-    },
-    {
-      "path": "design/character/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777166146002,
-      "type": "file"
-    },
-    {
-      "path": "design/ui/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777166156547,
-      "type": "file"
-    },
-    {
       "path": "design/marketing/README.md",
       "accessCount": 1,
       "lastAccessed": 1777166166435,
       "type": "file"
     },
     {
-      "path": "wiki/design/README.md",
+      "path": "design/ui/shortify-html-design/Shortify Main - Wireframe.html",
       "accessCount": 1,
-      "lastAccessed": 1777166183875,
+      "lastAccessed": 1777175825789,
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/01-identity.md",
+      "path": "design/ui/shortify-html-design/Shortify Main.html",
       "accessCount": 1,
-      "lastAccessed": 1777166199241,
+      "lastAccessed": 1777175826584,
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/02-logo.md",
+      "path": "design/ui/shortify-html-design/Shortify TOC Select.html",
       "accessCount": 1,
-      "lastAccessed": 1777166213225,
+      "lastAccessed": 1777175826940,
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/03-color.md",
+      "path": "design/ui/shortify-html-design/Shortify Character Select.html",
       "accessCount": 1,
-      "lastAccessed": 1777166228033,
+      "lastAccessed": 1777175827689,
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/04-typography.md",
+      "path": "design/ui/shortify-html-design/Shortify Generating.html",
       "accessCount": 1,
-      "lastAccessed": 1777166246135,
+      "lastAccessed": 1777175827840,
       "type": "file"
     },
     {
-      "path": "wiki/design/ui/01-principles.md",
+      "path": "design/ui/shortify-html-design/macos-window.jsx",
       "accessCount": 1,
-      "lastAccessed": 1777166260171,
+      "lastAccessed": 1777175837195,
       "type": "file"
     },
     {
-      "path": "wiki/design/ui/02-tokens.md",
+      "path": "design/ui/shortify-html-design/shortify-main.jsx",
       "accessCount": 1,
-      "lastAccessed": 1777166276874,
+      "lastAccessed": 1777175839118,
+      "type": "directory"
+    },
+    {
+      "path": "design/ui/shortify-html-design/shortify-generating.jsx",
+      "accessCount": 1,
+      "lastAccessed": 1777176006897,
       "type": "file"
     },
     {
-      "path": "wiki/design/ui/03-components.md",
+      "path": "wiki/design/ui/screens/README.md",
       "accessCount": 1,
-      "lastAccessed": 1777166297227,
+      "lastAccessed": 1777176180909,
       "type": "file"
     },
     {
-      "path": "wiki/design/character/01-bible.md",
+      "path": "wiki/design/ui/screens/01-main.md",
       "accessCount": 1,
-      "lastAccessed": 1777166314963,
+      "lastAccessed": 1777176207002,
       "type": "file"
     },
     {
-      "path": "wiki/design/character/02-usage.md",
+      "path": "wiki/design/ui/screens/02-toc-select.md",
       "accessCount": 1,
-      "lastAccessed": 1777166335500,
+      "lastAccessed": 1777176238253,
       "type": "file"
     },
     {
-      "path": "wiki/README.md",
+      "path": "wiki/design/ui/screens/03-character-select.md",
       "accessCount": 1,
-      "lastAccessed": 1777166348470,
+      "lastAccessed": 1777176263981,
       "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/screens/04-generating.md",
+      "accessCount": 1,
+      "lastAccessed": 1777176303305,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/screens",
+      "accessCount": 1,
+      "lastAccessed": 1777176346594,
+      "type": "directory"
     }
   ],
   "userDirectives": []

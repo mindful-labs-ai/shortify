@@ -1,8 +1,10 @@
 # 01. UI Design Principles
 
-> **Owner**: 김성곤 · **Status**: Draft · **Last Updated**: 2026-04-26
+> **Owner**: 김성곤 · **Status**: In Review · **Last Updated**: 2026-04-26 · **Source**: Brand Identity Guide v1.1
 
 Shortify 앱의 UI 디자인 원칙. 디자인 결정에서 충돌이 생기면 이 원칙으로 판단한다.
+
+> 브랜드 트레잇 **Snappy / Friendly / Smart** ([brand/01-identity §3](../brand/01-identity.md#3-브랜드-트레잇-traits))를 UI에서 실천하기 위한 6가지 원칙이다.
 
 ---
 

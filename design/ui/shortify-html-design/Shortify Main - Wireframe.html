@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Shortify — Main</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Pretendard via cdn (Google Fonts mirror is incomplete; fall back to system) */
+  @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+  :root{
+    /* Pure neutral scale — no hue */
+    --n-0: #ffffff;
+    --n-50: #fafafa;
+    --n-100: #f4f4f4;
+    --n-150: #ececec;
+    --n-200: #e4e4e4;
+    --n-300: #d1d1d1;
+    --n-400: #a8a8a8;
+    --n-500: #737373;
+    --n-600: #525252;
+    --n-700: #3f3f3f;
+    --n-800: #262626;
+    --n-900: #171717;
+    --n-950: #0a0a0a;
+
+    --hairline: rgba(0,0,0,0.08);
+    --hairline-strong: rgba(0,0,0,0.14);
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 20px;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+
+    --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin: 0; padding: 0; }
+  body{
+    font-family: var(--font-sans);
+    color: var(--n-900);
+    /* Desktop wallpaper-y backdrop, but neutral. Pure greys, no hue. */
+    background:
+      radial-gradient(1200px 800px at 80% -10%, #d8d8d8 0%, transparent 60%),
+      radial-gradient(1000px 700px at 0% 110%, #c8c8c8 0%, transparent 55%),
+      linear-gradient(180deg, #bdbdbd 0%, #a8a8a8 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root{ min-height: 100vh; }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // Tweak defaults persisted by the host (Tweaks toggle)
+    window.__TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "state": "empty",
+      "windowMode": "framed",
+      "showSidebar": true,
+      "density": "comfortable"
+    }/*EDITMODE-END*/;
+  </script>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="shortify-main-wireframe.jsx"></script>
+</body>
+</html>
