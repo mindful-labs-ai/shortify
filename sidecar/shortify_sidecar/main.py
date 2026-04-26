@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
 from .api import concepts, health, jobs, toc, upload
@@ -55,6 +56,17 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Shortify Sidecar", version="0.0.0", lifespan=lifespan)
+
+# 사이드카는 127.0.0.1 + Bearer 토큰으로 보호된다. CORS 는 브라우저 fetch
+# 편의용이라 origin 제한 없이 허용 (보안 경계는 토큰).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origin_regex=".*",
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 
 def verify_token(request: Request) -> None:
