@@ -28,19 +28,17 @@ pnpm preview      # serves admin/dist
 3. Fill in:
    - **Base URL**: from the sidecar terminal log line
      `Shortify sidecar at 127.0.0.1:<port>` → `http://127.0.0.1:<port>`
-   - **Token**: from `.env` (`SHORTIFY_TOKEN`) or whatever the Tauri shell
-     printed when it spawned the sidecar
-4. Click **Connect**. Both values are persisted to `localStorage`.
+4. Click **Connect**. The value is persisted to `localStorage`.
 
 ## What you see
 
-| Panel        | Source                  | Notes                                                              |
-|--------------|-------------------------|---------------------------------------------------------------------|
-| Stat bar     | `queue.counts` + jobs n | Pending / Running / Done / Failed / Total jobs                      |
-| Config       | `config`                | Model IDs, data_dir, worker count, Gemini-key indicator (red/green) |
-| Jobs (left)  | `jobs[]` (latest 50)    | Stage badge, concept, duration, soft-deleted strikethrough          |
-| Queue (RT)   | `queue.recent[]` (30)   | Status, task type, attempts, worker, error                          |
-| Events (RB)  | `events[]` (100)        | Stage transition timeline, oldest at bottom                         |
+| Panel       | Source                  | Notes                                                               |
+| ----------- | ----------------------- | ------------------------------------------------------------------- |
+| Stat bar    | `queue.counts` + jobs n | Pending / Running / Done / Failed / Total jobs                      |
+| Config      | `config`                | Model IDs, data_dir, worker count, Gemini-key indicator (red/green) |
+| Jobs (left) | `jobs[]` (latest 50)    | Stage badge, concept, duration, soft-deleted strikethrough          |
+| Queue (RT)  | `queue.recent[]` (30)   | Status, task type, attempts, worker, error                          |
+| Events (RB) | `events[]` (100)        | Stage transition timeline, oldest at bottom                         |
 
 Read-only. Mutations (retry, restore, empty trash) live on the main app.
 
@@ -55,7 +53,7 @@ Read-only. Mutations (retry, restore, empty trash) live on the main app.
 
 ## API contract
 
-`GET /admin/state` (Bearer-protected). Response shape:
+`GET /admin/state`. Response shape:
 
 ```ts
 {

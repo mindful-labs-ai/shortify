@@ -99,6 +99,7 @@ What it does, in order:
 | TS6310 composite/emit | already fixed: removed references in `tsconfig.json` |
 | ESLint can't find `vite.config.ts` | already fixed: ignored in `eslint.config.js` |
 | Stale dev DB after schema change | `rm -rf ~/Library/Application\ Support/Shortify/db.sqlite` (alembic re-applies on boot) |
+| `sidecar exited during boot — port 51234 is likely already in use` | `lsof -nP -iTCP:51234 -sTCP:LISTEN` → `kill -9 <PID>`. Cause: another `uvicorn`, a previous `pnpm tauri dev`, or admin standalone server. Sidecar always binds 51234 (fixed in `src-tauri/src/sidecar.rs::pick_port`). |
 
 ## Key decisions (read before refactoring)
 

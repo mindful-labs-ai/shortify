@@ -8,35 +8,31 @@ import { fetchState } from "./lib/api";
 import type { AdminState } from "./types";
 
 const LS_BASE = "shortify.admin.baseUrl";
-const LS_TOKEN = "shortify.admin.token";
 
 type Status = { kind: "idle" | "ok" | "err"; msg: string };
 
 export default function App() {
-  const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem(LS_BASE) ?? "");
-  const [token, setToken] = useState(() => localStorage.getItem(LS_TOKEN) ?? "");
+  const [baseUrl, setBaseUrl] = useState(
+    () => localStorage.getItem(LS_BASE) ?? "",
+  );
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [data, setData] = useState<AdminState | null>(null);
   const [status, setStatus] = useState<Status>({ kind: "idle", msg: "Idle" });
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!baseUrl || !token) {
-      setStatus({ kind: "err", msg: "Need URL + token" });
-      return;
-    }
     try {
-      const next = await fetchState(baseUrl, token);
+      const next = await fetchState(baseUrl);
       setData(next);
       setStatus({ kind: "ok", msg: `OK ${new Date().toLocaleTimeString()}` });
     } catch (e) {
       setStatus({ kind: "err", msg: `Err: ${(e as Error).message}` });
     }
-  }, [baseUrl, token]);
+  }, [baseUrl]);
 
   const connect = () => {
     localStorage.setItem(LS_BASE, baseUrl.trim());
-    localStorage.setItem(LS_TOKEN, token.trim());
     refresh();
   };
 
@@ -45,17 +41,17 @@ export default function App() {
       window.clearInterval(timer.current);
       timer.current = null;
     }
-    if (autoRefresh && baseUrl && token) {
+    if (autoRefresh) {
       timer.current = window.setInterval(refresh, 3000);
     }
     return () => {
       if (timer.current) window.clearInterval(timer.current);
     };
-  }, [autoRefresh, baseUrl, token, refresh]);
+  }, [autoRefresh, baseUrl, refresh]);
 
   // initial fetch when previously-saved values exist
   useEffect(() => {
-    if (baseUrl && token) refresh();
+    refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -70,20 +66,15 @@ export default function App() {
     <main className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-neutral-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-6 py-3">
-          <h1 className="text-sm font-semibold tracking-tight">Shortify · Admin</h1>
+          <h1 className="text-sm font-semibold tracking-tight">
+            Shortify · Admin
+          </h1>
           <input
             type="text"
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
-            placeholder="Base URL — http://127.0.0.1:51234"
+            placeholder="Base URL (leave empty to use Vite proxy → sidecar)"
             className="w-72 rounded-md border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-neutral-900"
-          />
-          <input
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder="Bearer token"
-            className="w-56 rounded-md border border-neutral-300 px-2 py-1 text-xs outline-none focus:border-neutral-900"
           />
           <button
             type="button"
@@ -100,7 +91,9 @@ export default function App() {
             />
             Auto refresh (3s)
           </label>
-          <span className={`rounded-full px-2 py-0.5 text-[11px] ${statusColor}`}>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] ${statusColor}`}
+          >
             {status.msg}
           </span>
         </div>
@@ -113,16 +106,28 @@ export default function App() {
             <ConfigPanel config={data.config} />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <JobsPanel jobs={data.jobs} />
+              <JobsPanel
+                jobs={data.jobs}
+                selectedJobId={selectedJobId}
+                onSelect={(id) =>
+                  setSelectedJobId((cur) => (cur === id ? null : id))
+                }
+              />
               <div className="flex flex-col gap-6">
-                <QueuePanel tasks={data.queue.recent} />
-                <EventsPanel events={data.events} />
+                <QueuePanel
+                  tasks={data.queue.recent}
+                  selectedJobId={selectedJobId}
+                />
+                <EventsPanel
+                  events={data.events}
+                  selectedJobId={selectedJobId}
+                />
               </div>
             </div>
           </>
         ) : (
           <div className="mt-20 text-center text-sm text-neutral-400">
-            Enter the sidecar Base URL + Bearer token, then Connect.
+            Enter the sidecar Base URL, then Connect.
           </div>
         )}
       </div>

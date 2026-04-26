@@ -22,13 +22,13 @@
 
 ## 컨셉 정의
 
-| 항목 | 내용 |
-|------|------|
-| **입력** | URL · PDF · 마크다운 노트 · 원문 텍스트 · 유튜브 자막 중 하나 |
-| **출력** | 30~60초 세로 영상 (1080×1920), 한 영상 = 한 개념 |
-| **구조** | Hook → Core Idea → Mechanism → Example → Recap (4비트 학습 구조) |
-| **타겟** | 하루 한 개념씩 마이크로러닝하고 싶은 학습자 ("아이디어용 듀오링고") |
-| **차별점** | 출처 자동 인용, 핵심 용어 하이라이트, 다이어그램 중심 비주얼 |
+| 항목       | 내용                                                                |
+| ---------- | ------------------------------------------------------------------- |
+| **입력**   | URL · PDF · 마크다운 노트 · 원문 텍스트 · 유튜브 자막 중 하나       |
+| **출력**   | 30~60초 세로 영상 (1080×1920), 한 영상 = 한 개념                    |
+| **구조**   | Hook → Core Idea → Mechanism → Example → Recap (4비트 학습 구조)    |
+| **타겟**   | 하루 한 개념씩 마이크로러닝하고 싶은 학습자 ("아이디어용 듀오링고") |
+| **차별점** | 출처 자동 인용, 핵심 용어 하이라이트, 다이어그램 중심 비주얼        |
 
 ---
 
@@ -61,26 +61,26 @@ brands/shortify/
 
 **`brand.yaml` 핵심 차이점**:
 
-| 필드 | d0po | shortify |
-|------|------|----------|
-| `tts.speed` | 1.4x | **1.0~1.1x** (학습용은 천천히) |
-| `image.style_preset` | Anime illustration | **Diagram / 교육 일러스트** |
-| `effects.subtitle_palette` | 웜 앰버 | **뉴트럴 + 핵심 용어 강조 컬러** |
-| `effects.footer_slot` | 없음 | **출처 인용 footer** |
-| `bgm.volume` | 0.13 | 0.10 (집중 방해 최소) |
+| 필드                       | d0po               | shortify                         |
+| -------------------------- | ------------------ | -------------------------------- |
+| `tts.speed`                | 1.4x               | **1.0~1.1x** (학습용은 천천히)   |
+| `image.style_preset`       | Anime illustration | **Diagram / 교육 일러스트**      |
+| `effects.subtitle_palette` | 웜 앰버            | **뉴트럴 + 핵심 용어 강조 컬러** |
+| `effects.footer_slot`      | 없음               | **출처 인용 footer**             |
+| `bgm.volume`               | 0.13               | 0.10 (집중 방해 최소)            |
 
 ---
 
 ## 신규 모듈
 
-| 위치 | 역할 |
-|------|------|
-| `shortify/ingest/url.py` | readability로 URL → 정제 본문 |
-| `shortify/ingest/pdf.py` | pypdf · pdfplumber로 PDF → 텍스트 + 메타데이터 |
-| `shortify/ingest/youtube.py` | yt-dlp + 자동 자막으로 유튜브 → 텍스트 |
-| `shortify/ingest/markdown.py` | 마크다운 frontmatter 파싱 + 본문 |
-| `shortify/conceptizer.py` | `gemini-3.1-flash-lite-preview` 호출 → `{concept, hook, beats[4], keywords[], citation}` JSON |
-| `d0po_video_cli/overlays.py` | `term_highlight()` + `citation_footer()` 추가 (additive, d0po 무영향) |
+| 위치                          | 역할                                                                                          |
+| ----------------------------- | --------------------------------------------------------------------------------------------- |
+| `shortify/ingest/url.py`      | readability로 URL → 정제 본문                                                                 |
+| `shortify/ingest/pdf.py`      | pypdf · pdfplumber로 PDF → 텍스트 + 메타데이터                                                |
+| `shortify/ingest/youtube.py`  | yt-dlp + 자동 자막으로 유튜브 → 텍스트                                                        |
+| `shortify/ingest/markdown.py` | 마크다운 frontmatter 파싱 + 본문                                                              |
+| `shortify/conceptizer.py`     | `gemini-3.1-flash-lite-preview` 호출 → `{concept, hook, beats[4], keywords[], citation}` JSON |
+| `d0po_video_cli/overlays.py`  | `term_highlight()` + `citation_footer()` 추가 (additive, d0po 무영향)                         |
 
 ---
 
@@ -123,8 +123,11 @@ shortify generate --source <url|pdf|md> --out <dir>
 빌드 시작 전에 답이 필요한 질문들:
 
 1. **소스 우선순위**: v0에서 가장 중요한 입력 포맷은? (URL 아티클 / PDF / 유튜브 자막 → Phase 2 순서 결정)
+   1. 답변: PDF
 2. **언어**: d0po처럼 한국어 우선? 영어 우선? 이중 언어?
+   1. 답변: 모든 UI 노출 언어는 영어
 3. **개념 단위**: 한 영상 = 한 개념 (60초, 집중형) vs. 한 소스 → 다중 영상 시리즈?
+   1. 답변: 한 영상 = 한 개념
 4. **비주얼 스타일**: 다이어그램 중심 (화이트보드, 화살표, 스키마) vs. 정적 일러스트 + 키워드 팝?
 5. **배포 타겟**: Reels / Shorts / TikTok 셋 다 vs. v0에서 하나만?
 
@@ -132,15 +135,15 @@ shortify generate --source <url|pdf|md> --out <dir>
 
 ## 참고: d0po 파이프라인 자산 (재사용 가능)
 
-| 자산 | 위치 | shortify 재사용 여부 |
-|------|------|----------------------|
-| `image_gen.py` | `d0po_video_cli/` | 그대로 재사용 (브랜드 프로필로 톤 변경) |
-| `video_gen.py` (`veo-3.1-generate-preview`) | `d0po_video_cli/` | 그대로 |
+| 자산                                                | 위치              | shortify 재사용 여부                           |
+| --------------------------------------------------- | ----------------- | ---------------------------------------------- |
+| `image_gen.py`                                      | `d0po_video_cli/` | 그대로 재사용 (브랜드 프로필로 톤 변경)        |
+| `video_gen.py` (`veo-3.1-generate-preview`)         | `d0po_video_cli/` | 그대로                                         |
 | `narration_gen.py` (`gemini-3.1-flash-tts-preview`) | `d0po_video_cli/` | 그대로 (voice·speed만 brand.yaml로 오버라이드) |
-| `alignment.py` (`gemini-3.1-flash-preview`) | `d0po_video_cli/` | 그대로 |
-| `rhythm_cut.py` | `d0po_video_cli/` | 그대로 |
-| `compose_v3.py` | `d0po_video_cli/` | overlay slot 확장 필요 |
-| `overlays.py` | `d0po_video_cli/` | term_highlight + citation_footer 추가 |
-| `scene_splitter.py` | `d0po_video_cli/` | 교육 톤 system prompt만 brand 주입 |
+| `alignment.py` (`gemini-3.1-flash-preview`)         | `d0po_video_cli/` | 그대로                                         |
+| `rhythm_cut.py`                                     | `d0po_video_cli/` | 그대로                                         |
+| `compose_v3.py`                                     | `d0po_video_cli/` | overlay slot 확장 필요                         |
+| `overlays.py`                                       | `d0po_video_cli/` | term_highlight + citation_footer 추가          |
+| `scene_splitter.py`                                 | `d0po_video_cli/` | 교육 톤 system prompt만 brand 주입             |
 
 **비용 추정**: d0po와 동일 (~$2.70/영상), 단 LLM 호출 비용($0.05~$0.20/영상) 추가.

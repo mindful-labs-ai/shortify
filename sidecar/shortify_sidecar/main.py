@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 
 from alembic import command as alembic_command
 from alembic.config import Config as AlembicConfig
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
@@ -75,24 +75,14 @@ app.add_middleware(
 )
 
 
-def verify_token(request: Request) -> None:
-    expected = settings().token
-    auth = request.headers.get("authorization", "")
-    qtoken = request.query_params.get("token")
-    presented = auth.removeprefix("Bearer ").strip() or qtoken
-    if presented != expected:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token")
-
-
-# /health 는 토큰 없이 (Tauri Shell polling)
+# 보안 경계 = 127.0.0.1 바인딩 only (단일 사용자 데스크톱 가정).
+# 같은 머신의 다른 프로세스가 호출하는 시나리오는 위협 모델 밖.
 app.include_router(health.router)
-
-protected = [Depends(verify_token)]
-app.include_router(upload.router, dependencies=protected)
-app.include_router(toc.router, dependencies=protected)
-app.include_router(jobs.router, dependencies=protected)
-app.include_router(concepts.router, dependencies=protected)
-app.include_router(admin.router, dependencies=protected)
+app.include_router(upload.router)
+app.include_router(toc.router)
+app.include_router(jobs.router)
+app.include_router(concepts.router)
+app.include_router(admin.router)
 
 
 def run() -> None:
