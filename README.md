@@ -112,11 +112,16 @@ shortify/
 │       ├── queue/                 # persistent.py · workers.py
 │       ├── pipeline/              # ingest_pdf · conceptizer · scene_splitter · image_gen · video_gen · narration_gen · alignment · rhythm_cut · compose · overlays · effects · make_mask
 │       └── storage/
-├── assets/
+├── assets/                        # 런타임 자산 (앱 번들 포함)
 │   ├── image_concepts/            # 5종 비주얼 프리셋
 │   ├── fonts/                     # Pretendard, Black Han Sans
 │   ├── bgm/                       # 라이선스 클리어 BGM
 │   └── ffmpeg/                    # universal2 정적 ffmpeg
+├── design/                        # 디자인 원본 (브랜드 · 캐릭터 · UI · 마케팅)
+│   ├── brand/                     # 로고 · 컬러 · 타이포 원본 (AI/SVG/ASE)
+│   ├── character/                 # 마스코트 컨셉 · 확정안 · 레퍼런스
+│   ├── ui/                        # 화면 목업 · 프로토타입 · 인계용 시안
+│   └── marketing/                 # 앱 아이콘 · 스크린샷 · OG 이미지
 ├── prompts/                       # toc_extractor · conceptizer · scene_director
 ├── scripts/                       # build_sidecar · codesign · notarize · make_dmg
 ├── tests/                         # pytest (sidecar) · vitest (ui)
@@ -237,6 +242,10 @@ git tag v1.2.3 && git push origin v1.2.3
 
 ## 문서 인덱스
 
+위키 루트: [`wiki/`](./wiki/) (영역별 인덱스 · 작성 규칙)
+
+### 기획 / 아키텍처
+
 - 기획안: [`wiki/prd/IDEA.md`](./wiki/prd/IDEA.md)
 - 단계별 로드맵: [`wiki/prd/plan.md`](./wiki/prd/plan.md)
 - 아키텍처:
@@ -248,3 +257,15 @@ git tag v1.2.3 && git push origin v1.2.3
   - [06 Pipeline](./wiki/prd/architecture/06-pipeline.md)
   - [07 Build & Deploy](./wiki/prd/architecture/07-build-deploy.md)
   - [08 Security](./wiki/prd/architecture/08-security.md)
+
+### 디자인 / 브랜드 / 캐릭터
+
+문서 인덱스: [`wiki/design/`](./wiki/design/) · 자산 원본: [`design/`](./design/)
+
+- 브랜드: [Identity](./wiki/design/brand/01-identity.md) · [Logo](./wiki/design/brand/02-logo.md) · [Color](./wiki/design/brand/03-color.md) · [Typography](./wiki/design/brand/04-typography.md)
+- UI: [Principles](./wiki/design/ui/01-principles.md) · [Tokens](./wiki/design/ui/02-tokens.md) · [Components](./wiki/design/ui/03-components.md)
+- 캐릭터: [Bible](./wiki/design/character/01-bible.md) · [Usage](./wiki/design/character/02-usage.md)
+
+### 팀
+
+- [팀원 소개](./wiki/members.md)

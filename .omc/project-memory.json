@@ -32,32 +32,32 @@
   "hotPaths": [
     {
       "path": "README.md",
-      "accessCount": 13,
-      "lastAccessed": 1777164910688,
+      "accessCount": 18,
+      "lastAccessed": 1777166378841,
       "type": "file"
     },
     {
       "path": "wiki/members.md",
-      "accessCount": 3,
-      "lastAccessed": 1777165435162,
+      "accessCount": 4,
+      "lastAccessed": 1777165982265,
       "type": "file"
     },
     {
       "path": "wiki/prd/plan.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534061,
-      "type": "file"
-    },
-    {
-      "path": "wiki/prd/architecture/01-overview.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534202,
+      "accessCount": 2,
+      "lastAccessed": 1777165982663,
       "type": "file"
     },
     {
       "path": "wiki/prd/architecture/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534214,
+      "accessCount": 2,
+      "lastAccessed": 1777165987901,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/01-overview.md",
+      "accessCount": 2,
+      "lastAccessed": 1777165988026,
       "type": "file"
     },
     {
@@ -76,6 +76,102 @@
       "path": "wiki/prd/architecture/08-security.md",
       "accessCount": 1,
       "lastAccessed": 1777164542244,
+      "type": "file"
+    },
+    {
+      "path": "design/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166127349,
+      "type": "file"
+    },
+    {
+      "path": "design/brand/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166135158,
+      "type": "file"
+    },
+    {
+      "path": "design/character/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166146002,
+      "type": "file"
+    },
+    {
+      "path": "design/ui/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166156547,
+      "type": "file"
+    },
+    {
+      "path": "design/marketing/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166166435,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166183875,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/01-identity.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166199241,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/02-logo.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166213225,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/03-color.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166228033,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/04-typography.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166246135,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/01-principles.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166260171,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/02-tokens.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166276874,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/03-components.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166297227,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/character/01-bible.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166314963,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/character/02-usage.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166335500,
+      "type": "file"
+    },
+    {
+      "path": "wiki/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777166348470,
       "type": "file"
     }
   ],
