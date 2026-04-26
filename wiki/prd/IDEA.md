@@ -612,7 +612,9 @@ queue_tasks (                          -- persistent queue
 | `GET`    | `/jobs/{id}/stream`       | SSE 진행 상황                             |
 | `POST`   | `/jobs/{id}/select-image` | `{image_concept_slug}` → stage 4 진입     |
 | `POST`   | `/jobs/{id}/retry`        | failed Job 재시도                         |
-| `DELETE` | `/jobs/{id}`              | Job + 파일 삭제                           |
+| `DELETE` | `/jobs/{id}`              | Job soft delete (휴지통 이동, 파일 보존)  |
+| `POST`   | `/jobs/{id}/restore`      | 휴지통에서 복원                           |
+| `DELETE` | `/trash`                  | 휴지통 비우기 (hard purge, 비가역)        |
 | `GET`    | `/image-concepts`         | 활성 컨셉 카드                            |
 
 **주의**: 이 API는 외부에 노출되지 않음. localhost(127.0.0.1) 바인딩 + 앱 부팅 시 랜덤 토큰 → 프론트가 헤더에 포함 → 사이드카에서 검증 (다른 로컬 프로세스의 호출 차단).

@@ -72,8 +72,20 @@ export const api = {
 
   retryJob: (id: string) => request<Job>(`/jobs/${id}/retry`, { method: "POST" }),
 
+  // Soft delete: 휴지통 이동, 파일 보존. 기본 listJobs 응답에서 제외됨.
   deleteJob: (id: string) =>
     request<{ ok: true }>(`/jobs/${id}`, { method: "DELETE" }),
+
+  // 휴지통에서 복원 (deleted_at = NULL).
+  restoreJob: (id: string) =>
+    request<Job>(`/jobs/${id}/restore`, { method: "POST" }),
+
+  // 휴지통 비우기 — 비가역 hard delete + 파일 회수.
+  emptyTrash: () =>
+    request<{ purged_jobs: number; purged_pdfs: number; freed_bytes: number }>(
+      "/trash",
+      { method: "DELETE" },
+    ),
 
   imageConcepts: () => request<ImageConcept[]>("/image-concepts"),
 

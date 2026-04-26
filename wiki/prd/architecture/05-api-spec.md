@@ -151,14 +151,41 @@ POST /jobs/{job_id}/retry
 
 `failed` 상태에서만 허용. 실패한 stage 이전부터 다시 시작 (자동 판단).
 
-### 삭제
+### 삭제 (Soft)
 
 ```
 DELETE /jobs/{job_id}
 → 204
 ```
 
-연결된 `output/<job_id>/` 폴더와 DB 행 모두 삭제.
+`deleted_at = now()` 마킹만. **파일·DB 행 보존**. 기본 `GET /jobs` 응답에서 제외된다.
+
+### 복원
+
+```
+POST /jobs/{job_id}/restore
+→ 200 { "id": "01J...", "deleted_at": null }
+```
+
+`deleted_at = NULL`로 되돌린다. 휴지통에 있을 때만 200, 아니면 404.
+
+### 휴지통 조회
+
+```
+GET /jobs?include_deleted=true&only_deleted=true
+→ 200 { "jobs": [...] }
+```
+
+soft delete된 항목만 (또는 활성+삭제 모두) 반환.
+
+### 휴지통 비우기 (Hard Purge)
+
+```
+DELETE /trash
+→ 200 { "purged_jobs": 12, "purged_pdfs": 3, "freed_bytes": 524288000 }
+```
+
+`deleted_at IS NOT NULL`인 모든 pdfs/jobs를 hard delete + 연결된 파일(`pdfs/<id>.pdf`, `output/<id>/`) 회수. 비가역.
 
 ### 이미지 컨셉
 

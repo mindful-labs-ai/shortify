@@ -48,4 +48,19 @@ def retry_job(job_id: str) -> dict:
 
 @router.delete("/jobs/{job_id}")
 def delete_job(job_id: str) -> dict:
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "delete not yet implemented")
+    """Soft delete: jobs.deleted_at = now(). 파일 보존. Phase 0 stub."""
+    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "soft delete not yet implemented")
+
+
+@router.post("/jobs/{job_id}/restore")
+def restore_job(job_id: str) -> dict:
+    """Soft delete 복원: deleted_at = NULL. Phase 0 stub."""
+    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "restore not yet implemented")
+
+
+@router.delete("/trash")
+def empty_trash() -> dict:
+    """휴지통 비우기 — 모든 deleted_at IS NOT NULL 행 hard delete + 파일 회수.
+    비가역. Phase 0 stub.
+    """
+    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "empty_trash not yet implemented")
