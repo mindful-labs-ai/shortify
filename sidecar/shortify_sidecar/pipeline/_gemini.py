@@ -180,33 +180,63 @@ async def image(
         resp = c.models.generate_content(
             model=settings().model_image,
             contents=contents,
-            # gemini-*-image-preview 류는 IMAGE modality 명시가 필수.
-            config=gtypes.GenerateContentConfig(response_modalities=["IMAGE"]),
+            # gemini-*-image-preview 는 일부 변종이 IMAGE-only modality 를 거부.
+            # TEXT 도 함께 허용해 받고, 우리는 inline_data (이미지 blob) 만 사용.
+            config=gtypes.GenerateContentConfig(
+                response_modalities=["IMAGE", "TEXT"],
+            ),
         )
         # 응답 구조 방어: candidates / content / parts 어느 단계든 None 가능
         candidates = getattr(resp, "candidates", None) or []
+        prompt_feedback = getattr(resp, "prompt_feedback", None)
+        block_reason = getattr(prompt_feedback, "block_reason", None)
+
         if not candidates:
-            block_reason = (
-                getattr(getattr(resp, "prompt_feedback", None), "block_reason", None)
-            )
             raise RuntimeError(
                 f"Gemini image: empty candidates"
                 + (f" (blocked: {block_reason})" if block_reason else "")
             )
-        content = getattr(candidates[0], "content", None)
+
+        cand = candidates[0]
+        finish_reason = getattr(cand, "finish_reason", None)
+        finish_message = getattr(cand, "finish_message", None)
+        safety = getattr(cand, "safety_ratings", None) or []
+
+        content = getattr(cand, "content", None)
         parts = getattr(content, "parts", None) or []
+
+        # inline_data (이미지 blob) 가 첫 번째로 오는 part 찾기
         for part in parts:
             inline = getattr(part, "inline_data", None)
             if inline and getattr(inline, "data", None):
                 out_path.write_bytes(inline.data)
                 return len(inline.data)
-        # 텍스트만 돌려준 경우 본문을 노출해 디버깅
+
+        # 실패 — 모든 진단 정보 모아서 노출
         text_dump = " | ".join(
             (getattr(p, "text", None) or "") for p in parts if getattr(p, "text", None)
-        )[:300]
+        )[:500]
+        safety_dump = ", ".join(
+            f"{getattr(r, 'category', '?')}={getattr(r, 'probability', '?')}"
+            for r in safety
+            if getattr(r, "blocked", False) or str(getattr(r, "probability", "")).upper() in {"HIGH", "MEDIUM"}
+        )
+        details = []
+        if block_reason:
+            details.append(f"prompt_blocked={block_reason}")
+        if finish_reason:
+            details.append(f"finish_reason={finish_reason}")
+        if finish_message:
+            details.append(f"finish_message={finish_message}")
+        if safety_dump:
+            details.append(f"safety=[{safety_dump}]")
+        if text_dump:
+            details.append(f"text='{text_dump}'")
+        details.append(f"n_parts={len(parts)}")
+
         raise RuntimeError(
-            f"Gemini image: no inline_data in response (model={settings().model_image})"
-            + (f" — text='{text_dump}'" if text_dump else "")
+            f"Gemini image: no inline_data (model={settings().model_image}) — "
+            + "; ".join(details)
         )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
