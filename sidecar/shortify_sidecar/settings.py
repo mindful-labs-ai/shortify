@@ -52,6 +52,20 @@ class Settings:
     # 환경변수로 조정 가능: SHORTIFY_VIDEO_DURATION_SEC.
     video_duration_sec: int = int(os.environ.get("SHORTIFY_VIDEO_DURATION_SEC", "6"))
 
+    # 테스트 모드 — Imagen / Veo 호출량을 줄여 dev 사이클을 빠르게.
+    #   SHORTIFY_TEST_MODE=1   → test scene count 활성화
+    #   SHORTIFY_TEST_SCENE_COUNT=N (기본 2)
+    # prod 기본은 14 (scene_splitter 의 default n).
+    test_mode: bool = os.environ.get("SHORTIFY_TEST_MODE") == "1"
+    test_scene_count: int = max(
+        1, int(os.environ.get("SHORTIFY_TEST_SCENE_COUNT", "2"))
+    )
+
+    @property
+    def scene_count(self) -> int:
+        """현재 모드에 맞는 scene 갯수 (test 면 축소, 아니면 14)."""
+        return self.test_scene_count if self.test_mode else 14
+
 
 @lru_cache(maxsize=1)
 def settings() -> Settings:

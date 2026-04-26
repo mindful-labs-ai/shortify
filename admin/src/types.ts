@@ -7,6 +7,9 @@ export type AdminConfig = {
   data_dir: string;
   n_workers: number;
   gemini_key_set: boolean;
+  test_mode: boolean;
+  scene_count: number;
+  video_duration_sec: number;
 };
 
 export type QueueTaskRow = {

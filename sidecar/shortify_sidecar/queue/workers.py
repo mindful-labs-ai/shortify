@@ -23,6 +23,7 @@ from ..db.models import Job, JobEvent, Pdf
 from ..db.session import session_factory
 from ..pipeline import get_pipeline
 from ..pipeline._trace import current_job_id
+from ..settings import settings
 from ..storage.paths import output_dir
 from .base import Task, TaskQueue
 
@@ -141,8 +142,11 @@ async def _handle_generate_video(task: Task) -> None:
     started = datetime.now(tz=timezone.utc)
     narration_text = " ".join(b["text"] for b in job.conceptized_json["beats"])
 
-    # ── Stage 4: Imaging (이미 14장 있으면 재사용) ──────────────────
-    scenes = pipeline.split_scenes(job.conceptized_json)
+    # ── Stage 4: Imaging (이미 N장 있으면 재사용) ──────────────────
+    n_scenes = settings().scene_count
+    scenes = pipeline.split_scenes(job.conceptized_json, n=n_scenes)
+    if settings().test_mode:
+        log.info("  [%s] TEST_MODE: %d scenes (instead of 14)", job_id, n_scenes)
     cached_pngs = _existing_pngs(job_id, len(scenes))
     if cached_pngs:
         log.info("  [%s] reusing %d cached images", job_id, len(cached_pngs))

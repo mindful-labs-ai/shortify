@@ -256,6 +256,9 @@ async def admin_state(
             "data_dir": str(settings().data_dir),
             "n_workers": settings().n_workers,
             "gemini_key_set": bool(settings().gemini_api_key),
+            "test_mode": settings().test_mode,
+            "scene_count": settings().scene_count,
+            "video_duration_sec": settings().video_duration_sec,
         },
         "queue": {
             "counts": {
