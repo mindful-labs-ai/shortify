@@ -43,52 +43,79 @@ fn pick_port() -> u16 {
     portpicker::pick_unused_port().unwrap_or(51234)
 }
 
-fn sidecar_binary_path() -> PathBuf {
-    // dev 모드: SHORTIFY_DEV=1 이면 sidecar/.venv 사용 (Cargo.toml dir 기준)
-    // prod 모드: <bundle>/Contents/Resources/shortify-sidecar
-    if std::env::var("SHORTIFY_DEV").ok().as_deref() == Some("1") {
-        // dev에서는 spawn 안 함 — 외부 uvicorn에 연결만
-        return PathBuf::from("__dev_mode__");
+fn is_dev_mode() -> bool {
+    // 1) SHORTIFY_DEV=1/0 명시 override 우선
+    match std::env::var("SHORTIFY_DEV").ok().as_deref() {
+        Some("1") => return true,
+        Some("0") => return false,
+        _ => {}
     }
-    let exe = std::env::current_exe().unwrap_or_default();
+    // 2) debug_assertions = cargo dev / pnpm tauri dev
+    cfg!(debug_assertions)
+}
+
+fn dev_sidecar_command(host: &str, port: u16, token: &str, api_key: &str) -> Result<Command, String> {
+    // <repo>/src-tauri/target/debug/shortify (cwd at runtime) → 상위 2단 = repo
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let candidates = [
+        exe.parent().and_then(|p| p.parent()).and_then(|p| p.parent()).and_then(|p| p.parent()).map(|p| p.join("sidecar/.venv/bin/python")),
+        Some(PathBuf::from("../sidecar/.venv/bin/python")),
+        Some(PathBuf::from("sidecar/.venv/bin/python")),
+    ];
+    let python = candidates.into_iter().flatten().find(|p| p.exists()).ok_or_else(|| {
+        "dev sidecar venv not found. Run: cd sidecar && python3 -m venv .venv && .venv/bin/pip install -e \".[dev]\"".to_string()
+    })?;
+
+    let mut cmd = Command::new(python);
+    cmd.args([
+        "-m", "uvicorn", "shortify_sidecar.main:app",
+        "--host", host,
+        "--port", &port.to_string(),
+        "--log-level", "info",
+    ]);
+    cmd.env("SHORTIFY_HOST", host)
+        .env("SHORTIFY_PORT", port.to_string())
+        .env("SHORTIFY_TOKEN", token)
+        .env("GEMINI_API_KEY", api_key);
+    Ok(cmd)
+}
+
+fn prod_sidecar_command(host: &str, port: u16, token: &str, api_key: &str) -> Result<Command, String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let resources = exe
         .parent()
         .and_then(|p| p.parent())
         .map(|p| p.join("Resources"))
-        .unwrap_or_else(|| PathBuf::from("Resources"));
-    resources.join("shortify-sidecar")
+        .ok_or_else(|| "could not resolve Resources dir".to_string())?;
+    let bin = resources.join("shortify-sidecar");
+    if !bin.exists() {
+        return Err(format!(
+            "prod sidecar not found at {bin:?}. Did you forget to run scripts/build_sidecar.sh?"
+        ));
+    }
+    let mut cmd = Command::new(bin);
+    cmd.env("SHORTIFY_HOST", host)
+        .env("SHORTIFY_PORT", port.to_string())
+        .env("SHORTIFY_TOKEN", token)
+        .env("GEMINI_API_KEY", api_key);
+    Ok(cmd)
 }
 
 pub fn spawn(handle: &SidecarHandle) -> Result<ApiConfig, String> {
     let token = make_token();
     let port = pick_port();
     let host = "127.0.0.1".to_string();
-
-    let dev_mode = std::env::var("SHORTIFY_DEV").ok().as_deref() == Some("1");
-
     let api_key = crate::keychain::get_or_empty("shortify", "gemini");
 
-    if dev_mode {
-        // dev: uvicorn 외부에서 띄움. config 만 박음.
-        let cfg = ApiConfig {
-            base_url: format!("http://{host}:{port}"),
-            token: std::env::var("SHORTIFY_TOKEN").unwrap_or(token),
-        };
-        *handle.config.lock().unwrap() = Some(cfg.clone());
-        return Ok(cfg);
-    }
-
-    let bin = sidecar_binary_path();
-    let mut cmd = Command::new(&bin);
-    cmd.env("SHORTIFY_HOST", &host)
-        .env("SHORTIFY_PORT", port.to_string())
-        .env("SHORTIFY_TOKEN", &token)
-        .env("GEMINI_API_KEY", api_key)
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
+    let mut cmd = if is_dev_mode() {
+        dev_sidecar_command(&host, port, &token, &api_key)?
+    } else {
+        prod_sidecar_command(&host, port, &token, &api_key)?
+    };
+    cmd.stdout(Stdio::inherit()).stderr(Stdio::inherit());
     let child = cmd
         .spawn()
-        .map_err(|e| format!("failed to spawn sidecar at {bin:?}: {e}"))?;
+        .map_err(|e| format!("failed to spawn sidecar: {e}"))?;
 
     let cfg = ApiConfig {
         base_url: format!("http://{host}:{port}"),
