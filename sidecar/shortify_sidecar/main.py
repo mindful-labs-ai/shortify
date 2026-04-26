@@ -1,21 +1,59 @@
-"""Shortify Sidecar entry point.
-
-Phase 0: 11개 엔드포인트가 모두 등록되어 있으나 대부분 stub (501).
-프론트엔드는 이 contract 기반으로 작업 시작.
-"""
+"""Shortify Sidecar entry point."""
 from __future__ import annotations
 
-import os
+import logging
+from contextlib import asynccontextmanager
 
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from pathlib import Path
 
 from .api import concepts, health, jobs, toc, upload
+from .db.seed import seed_image_concepts
+from .db.session import dispose, session_factory
+from .queue.sqlite_impl import SqliteTaskQueue
+from .queue.workers import WorkerPool
+from .settings import settings
 
-app = FastAPI(title="Shortify Sidecar", version="0.0.0")
+log = logging.getLogger("shortify")
+logging.basicConfig(level=logging.INFO)
+
+
+def _run_migrations() -> None:
+    cfg = AlembicConfig(str(Path(__file__).parent.parent / "alembic.ini"))
+    cfg.set_main_option("sqlalchemy.url", settings().database_url)
+    alembic_command.upgrade(cfg, "head")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    log.info("starting Shortify sidecar at %s:%s", settings().host, settings().port)
+    _run_migrations()
+
+    async with session_factory()() as s:
+        added = await seed_image_concepts(s)
+        if added:
+            log.info("seeded %d image concepts", added)
+
+    queue = SqliteTaskQueue()
+    pool = WorkerPool(queue, n=settings().n_workers)
+    await pool.start()
+    app.state.worker_pool = pool
+
+    try:
+        yield
+    finally:
+        log.info("shutting down sidecar")
+        await pool.stop()
+        await dispose()
+
+
+app = FastAPI(title="Shortify Sidecar", version="0.0.0", lifespan=lifespan)
 
 
 def verify_token(request: Request) -> None:
-    expected = os.environ.get("SHORTIFY_TOKEN", "dev")
+    expected = settings().token
     auth = request.headers.get("authorization", "")
     qtoken = request.query_params.get("token")
     presented = auth.removeprefix("Bearer ").strip() or qtoken
@@ -23,10 +61,9 @@ def verify_token(request: Request) -> None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid token")
 
 
-# /health 는 토큰 없이 (Tauri Shell 부팅 polling 용)
+# /health 는 토큰 없이 (Tauri Shell polling)
 app.include_router(health.router)
 
-# 그 외 라우터는 모두 토큰 필수
 protected = [Depends(verify_token)]
 app.include_router(upload.router, dependencies=protected)
 app.include_router(toc.router, dependencies=protected)
@@ -35,12 +72,16 @@ app.include_router(concepts.router, dependencies=protected)
 
 
 def run() -> None:
-    """PyInstaller / dev 양쪽에서 진입."""
     import uvicorn
 
-    host = os.environ.get("SHORTIFY_HOST", "127.0.0.1")
-    port = int(os.environ.get("SHORTIFY_PORT", "51234"))
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    s = settings()
+    uvicorn.run(
+        "shortify_sidecar.main:app",
+        host=s.host,
+        port=s.port,
+        log_level="info",
+        reload=s.dev_mode,
+    )
 
 
 if __name__ == "__main__":
