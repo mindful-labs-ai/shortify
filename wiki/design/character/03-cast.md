@@ -2,21 +2,24 @@
 
 > **Owner**: 김성곤 · **Status**: Approved · **Last Updated**: 2026-04-26 · **Source**: Shortify Character Cast Guide v1.1 + 캐스트 포트레이트 v1
 
-영상 안에서 **지식을 전달하거나 체험하는 인간 캐릭터 캐스트** 5인. 마스코트 [쇼리(Shori)](./01-bible.md)는 _앱의 인격_, 본 캐스트는 _콘텐츠의 인격_.
+Shortify의 **캐릭터 캐스트 6인** — 대표 마스코트 [쇼리(Shori)](./01-bible.md) + 영상 화자 5인(Pip / Iris / Jay / Vera / Sage). 자산은 모두 `design/character/cast/{id}/` 동일 구조로 관리한다. 단, **활동 무대는 다르다** — 쇼리는 앱 UI(빈 화면 / 스트릭 / 푸시) 메인 + 영상 카메오, 5인은 영상 본편 메인 화자.
 
 ---
 
 ## 0. 정본 비주얼 자산
 
-| 캐릭터 | 정본 포트레이트 |
-|--------|----------------|
-| Pip | [`/design/character/cast/pip/cast_pip_portrait_v1.png`](../../../design/character/cast/pip/cast_pip_portrait_v1.png) |
-| Iris | [`/design/character/cast/iris/cast_iris_portrait_v1.png`](../../../design/character/cast/iris/cast_iris_portrait_v1.png) |
-| Jay | [`/design/character/cast/jay/cast_jay_portrait_v1.png`](../../../design/character/cast/jay/cast_jay_portrait_v1.png) |
-| Vera | [`/design/character/cast/vera/cast_vera_portrait_v1.png`](../../../design/character/cast/vera/cast_vera_portrait_v1.png) |
-| Sage | [`/design/character/cast/sage/cast_sage_portrait_v1.png`](../../../design/character/cast/sage/cast_sage_portrait_v1.png) |
+서비스 레벨에서는 **쇼리도 캐스트의 일원**으로 동일하게 취급된다. 단, 쇼리는 _대표 캐릭터(앱 인격 / 마스코트)_ 로서 푸시·빈 화면·스트릭 등 앱 UI에서도 노출되며, 5인 캐스트는 영상 본편 화자가 메인 활동 무대다. 자산 구조도 `design/character/cast/{id}/cast_{id}_portrait_v1.png` 로 통일한다.
 
-> 작업 폴더 인덱스: [`/design/character/cast/`](../../../design/character/cast/)
+| 캐릭터 | 역할 | 정본 포트레이트 |
+|--------|------|----------------|
+| **Shori** (쇼리) | 대표 / 앱 인격 + 영상 카메오 | [`/design/character/cast/shori/cast_shori_portrait_v1.png`](../../../design/character/cast/shori/cast_shori_portrait_v1.png) |
+| Pip | 캐스트 (12세 ENFP) | [`/design/character/cast/pip/cast_pip_portrait_v1.png`](../../../design/character/cast/pip/cast_pip_portrait_v1.png) |
+| Iris | 캐스트 (24세 INFJ) | [`/design/character/cast/iris/cast_iris_portrait_v1.png`](../../../design/character/cast/iris/cast_iris_portrait_v1.png) |
+| Jay | 캐스트 (31세 ENTJ) | [`/design/character/cast/jay/cast_jay_portrait_v1.png`](../../../design/character/cast/jay/cast_jay_portrait_v1.png) |
+| Vera | 캐스트 (52세 ESFJ) | [`/design/character/cast/vera/cast_vera_portrait_v1.png`](../../../design/character/cast/vera/cast_vera_portrait_v1.png) |
+| Sage | 캐스트 (71세 ISTP) | [`/design/character/cast/sage/cast_sage_portrait_v1.png`](../../../design/character/cast/sage/cast_sage_portrait_v1.png) |
+
+> 쇼리 상세 명세 / 마스코트 시트·turnaround 등 마스터 자산은 [`01-bible`](./01-bible.md) + [`/design/character/final/`](../../../design/character/final/). 작업 폴더 인덱스: [`/design/character/cast/`](../../../design/character/cast/).
 
 ---
 
@@ -24,10 +27,11 @@
 
 ### 두 축의 곱
 
-각 캐릭터는 **연령(세대)** × **성격(MBTI)** 의 교차점에 자리한다. 같은 주제도 누가 어떻게 말하느냐에 따라 다른 콘텐츠가 되도록 설계.
+영상 화자 5인은 **연령(세대)** × **성격(MBTI)** 의 교차점에 자리한다. 같은 주제도 누가 어떻게 말하느냐에 따라 다른 콘텐츠가 되도록 설계. 쇼리는 사람 캐스트의 매트릭스 바깥 — 마스코트 동물 캐릭터로 별도 축에 위치.
 
-- **연령 축**: 12세 / 24세 / 31세 / 52세 / 71세
+- **연령 축**: 12세 / 24세 / 31세 / 52세 / 71세 (사람 캐스트)
 - **성격 축**: 외향(E) 3 : 내향(I) 2 — 외향이 약간 우세하지만 균형.
+- **마스코트 축**: 쇼리(레서판다, 앱 인격)
 
 ### 캐스트의 역할
 
@@ -71,21 +75,45 @@ Shori   ·   Pip   ·   Iris   ·   Jay   ·   Vera   ·   Sage
 
 ### 캐릭터별 메인 컬러 배정
 
-쇼리가 메인 코랄(`#FF6B4A`)을 가져가므로, 5인 캐스트는 **보조 팔레트에서 한 컬러씩** — 화면에서 쇼리와 함께 등장해도 시각적으로 충돌하지 않도록 설계.
+쇼리는 **메인 코랄**(`#FF6B4A`) — 브랜드 동일색을 그대로 사용해 앱 인격임을 시각화. 나머지 5인 캐스트는 **보조 팔레트에서 한 컬러씩** — 함께 등장해도 시각 위계가 무너지지 않도록 설계.
 
 | 캐릭터 | 메인 컬러 | HEX | 토큰 |
 |--------|-----------|-----|------|
+| **Shori** | Spark coral | `#FF6B4A` | `coral-500` / `brand-primary` (브랜드 동일색) |
 | Pip | Sunny yellow | `#FFC83D` | `yellow-500` (기존) |
 | Iris | Mint green | `#5BD4A8` | `mint-500` (기존) |
 | Jay | Sky blue | `#4A9BFF` | `sky-500` (기존) |
-| Vera | **Lavender** | `#B69CE8` | `lavender-500` (**캐스트 팔레트 신설**) |
-| Sage | **Warm gray** | `#8B7E72` | `warm-gray-500` (**캐스트 팔레트 신설**) |
+| Vera | **Lavender** | `#B69CE8` | `cast-lavender-500` (**캐스트 팔레트 신설**) |
+| Sage | **Warm gray** | `#8B7E72` | `cast-warm-gray-500` (**캐스트 팔레트 신설**) |
 
 > Lavender / Warm gray는 5인 캐스트를 위한 신규 보조 컬러. [`brand/03-color §1`](../brand/03-color.md#1-코어-팔레트) `cast-*` 토큰 등록.
 
 ---
 
-## 3. 캐스트 5인 — 상세
+## 3. 캐스트 6인 — 상세
+
+### 3.0 Shori — 대표 / 마스코트
+
+> _"한 입만 더 어때요?"_
+
+![Shori](../../../design/character/cast/shori/cast_shori_portrait_v1.png)
+
+| 항목 | 내용 |
+|------|------|
+| 종 | 레서판다 (Red panda) |
+| 역할 | 앱 인격(브랜드 마스코트) + 영상 카메오 (모서리 박수·응원 보조 등장) |
+| 메인 컬러 | Spark coral `#FF6B4A` (브랜드 동일색) |
+| 외형 | 둥글고 통통한 비율, 페이스 마스크(Cream), Dark Brown `#3A2A23` 포인트, 줄무늬 꼬리 |
+| 시그니처 | 페이스 마스크 + 줄무늬 꼬리 + 옅은 핑크 볼터치 |
+| 톤 키워드 | 호기심 / 친근함 / 꾸준함 |
+
+**담당** — 푸시 / 빈 화면 / 스트릭 축하 / 학습 시작·완료 모먼트 / 라이브러리 빈 상태. 영상 본편 화자는 ❌ — 모서리 카메오만 허용.
+
+**시청자 효과** — "한 입 더 권유"의 부드러운 압박. 압박형이 아닌 권유형이라 사용자가 부담 없이 매일 돌아옴.
+
+**상세 명세** — [01-bible](./01-bible.md) (성격 4 필러 / 표정 8종 / 포즈 4종 / 4-view turnaround / IN USE 5종).
+
+---
 
 ### 3.1 Pip — 12세, ENFP
 
@@ -279,18 +307,18 @@ E:I = 3:2 — 외향이 약간 우세하지만 균형.
 
 ## 7. UI 통합 — Character Select
 
-[Character Select 화면](../ui/screens/03-character-select.md)의 `CHARACTERS` 데이터에 본 5인을 등록한다 (현재 코드 정본은 `shori`만 존재 — 갱신 필요).
+[Character Select 화면](../ui/screens/03-character-select.md)의 `CHARACTERS` 데이터는 본 6인 캐스트로 등록한다 (현재 코드 정본은 `shori`만 존재 — 5인 추가 필요).
 
 | `id` | name | tagline | mainColor 토큰 | portrait 자산 |
 |------|------|---------|----------------|----------------|
+| `shori` | Shori (쇼리) | 한 입만 더 어때요? — 대표 마스코트 | `coral-500` | `cast/shori/cast_shori_portrait_v1.png` |
 | `pip` | Pip | 호기심 폭발, "왜?" 의 친구 | `yellow-500` | `cast/pip/cast_pip_portrait_v1.png` |
 | `iris` | Iris | 사색적인 인문 안내자 | `mint-500` | `cast/iris/cast_iris_portrait_v1.png` |
 | `jay` | Jay | 비즈니스·트렌드 요약가 | `sky-500` | `cast/jay/cast_jay_portrait_v1.png` |
 | `vera` | Vera | 어른의 생활 지혜 | `cast-lavender-500` | `cast/vera/cast_vera_portrait_v1.png` |
 | `sage` | Sage | 장인의 깊이 있는 이야기 | `cast-warm-gray-500` | `cast/sage/cast_sage_portrait_v1.png` |
-| `shori` | 쇼리 | 기본 마스코트 (앱 인격) | `coral-500` | (마스코트 정본) |
 
-> **선택 매트릭스**: 한 영상의 캐스트는 1인 또는 2인 페어. UI에서는 단일 선택부터 구현, 페어 모드는 후속.
+> **선택 매트릭스**: 한 영상의 캐스트는 1인 또는 2인 페어. UI에서는 단일 선택부터 구현, 페어 모드는 후속. 쇼리는 영상에서 카메오로만 사용 — 메인 화자 슬롯에는 5인 우선.
 
 ---
 
@@ -321,4 +349,5 @@ E:I = 3:2 — 외향이 약간 우세하지만 균형.
 
 | 날짜 | 작성자 | 변경 |
 |------|--------|------|
+| 2026-04-26 | 김성곤 | 쇼리를 캐스트 6인 구조로 통합 — `cast/shori/cast_shori_portrait_v1.png` 등록, §0/§2/§3.0/§7 표 갱신, 마스코트 마스터 자산(`final/`)은 시트/turnaround 보존소로 분리 |
 | 2026-04-26 | 김성곤 | Character Cast Guide v1.1 + 포트레이트 v1 5장 반영 — Pip/Iris/Jay/Vera/Sage 정의, Lavender·Warm gray 신설, UI 매핑 |
