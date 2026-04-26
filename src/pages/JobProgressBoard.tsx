@@ -13,17 +13,17 @@ import { useAppStore } from "../store";
 // ─────────────────────────────────────────────────────────────
 
 const STAGE_LABELS: Record<number, string> = {
-  [-1]: "실패",
-  0: "대기 중",
-  1: "PDF 분석 중",
-  2: "핵심 개념 추출 중",
-  3: "이미지 컨셉 골라주세요",
-  4: "이미지 만드는 중",
-  5: "영상 클립 만드는 중",
-  6: "내레이션 만드는 중",
-  7: "오디오 정렬 중",
-  8: "영상 합치는 중",
-  9: "완료",
+  [-1]: "Failed",
+  0: "Waiting",
+  1: "Analyzing PDF",
+  2: "Extracting key concepts",
+  3: "Pick an image concept",
+  4: "Generating images",
+  5: "Generating video clips",
+  6: "Generating narration",
+  7: "Aligning audio",
+  8: "Composing video",
+  9: "Done",
 };
 
 // Group API stages (−1..9) into 5 design phases (1..5).
@@ -42,6 +42,36 @@ const STAGE_TO_PHASE: Record<number, number> = {
   9: 5,
 };
 
+// Each pipeline stage's [start, end) on the global 0–100 progress axis.
+// Sidecar emits per-stage progress_pct only for image_gen (stage 4) and
+// video_gen (stage 5); other stages have no per-stage progress signal.
+// Subdividing the design phase ranges among their stages makes the global
+// progress monotonic across stage transitions.
+const STAGE_RANGES: Record<number, [number, number]> = {
+  [-1]: [0, 0],
+  0: [0, 0],
+  1: [0, 6],
+  2: [6, 12],
+  3: [12, 18],
+  4: [18, 30],
+  5: [30, 42],
+  6: [42, 55],
+  7: [55, 68],
+  8: [68, 94],
+  9: [94, 100],
+};
+
+function progressForJob(stage: number, stagePct: number | undefined): number {
+  if (stage === 9) return 100;
+  if (stage === -1) return 0;
+  const [a, b] = STAGE_RANGES[stage] ?? [0, 0];
+  const pct =
+    typeof stagePct === "number"
+      ? Math.max(0, Math.min(100, stagePct))
+      : 0;
+  return a + (b - a) * (pct / 100);
+}
+
 // Design phases exactly as shown in the GeneratingView phase list.
 // range is the [min, max) progress_pct range that this phase covers.
 interface Phase {
@@ -52,28 +82,20 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
-  { id: "read", label: "PDF 읽는 중", phaseNum: 1, range: [0, 18] },
-  { id: "outline", label: "스크립트 짜는 중", phaseNum: 2, range: [18, 42] },
-  { id: "voice", label: "목소리 입히는 중", phaseNum: 3, range: [42, 68] },
-  { id: "render", label: "영상 합치는 중", phaseNum: 4, range: [68, 94] },
-  { id: "finish", label: "마무리", phaseNum: 5, range: [94, 100] },
+  { id: "read", label: "Reading PDF", phaseNum: 1, range: [0, 18] },
+  { id: "outline", label: "Writing script", phaseNum: 2, range: [18, 42] },
+  { id: "voice", label: "Recording voice", phaseNum: 3, range: [42, 68] },
+  { id: "render", label: "Composing video", phaseNum: 4, range: [68, 94] },
+  { id: "finish", label: "Finishing up", phaseNum: 5, range: [94, 100] },
 ];
 
 const PHASE_SPEECH: Record<string, string> = {
-  read: "PDF 한 장씩 꼼꼼히 보고 있어요…",
-  outline: "재밌는 한 입 사이즈로 잘라볼게요!",
-  voice: "자, 마이크 체크 — 하나, 둘!",
-  render: "그림이랑 자막을 입히는 중이에요.",
-  finish: "거의 다 됐어요, 조금만 더!",
+  read: "Reading the PDF page by page…",
+  outline: "Slicing it into bite-sized chunks!",
+  voice: "Mic check — one, two!",
+  render: "Layering visuals and captions.",
+  finish: "Almost there, hang tight!",
 };
-
-// Derive a design phase object from a raw progress_pct value.
-function phaseFromProgress(progress: number): Phase {
-  return (
-    PHASES.find((p) => progress >= p.range[0] && progress < p.range[1]) ||
-    PHASES[PHASES.length - 1]
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 // File-local sub-component: PhaseList
@@ -162,7 +184,7 @@ function PhaseList({ progress }: { progress: number }) {
                   color: "var(--coral-700)",
                 }}
               >
-                진행 중
+                In progress
               </div>
             )}
             {done && (
@@ -174,7 +196,7 @@ function PhaseList({ progress }: { progress: number }) {
                   color: "var(--mint-900)",
                 }}
               >
-                완료
+                Done
               </div>
             )}
           </div>
@@ -278,8 +300,11 @@ export default function JobProgressBoard() {
   const upsertJob = useAppStore((s) => s.upsertJob);
   const setView = useAppStore((s) => s.setView);
 
-  // Track per-job progress_pct received from SSE events (not in REST response).
-  const [progressMap, setProgressMap] = useState<Record<string, number>>({});
+  // Per-job stage progress_pct from SSE. We pin the stage at write time so a
+  // stale value from a previous stage is never reused after the worker advances.
+  const [progressMap, setProgressMap] = useState<
+    Record<string, { stage: number; pct: number }>
+  >({});
 
   // Initial fetch of job state.
   useEffect(() => {
@@ -298,9 +323,12 @@ export default function JobProgressBoard() {
       subscribeJob(
         api.jobStreamUrl(id),
         (e: JobEvent) => {
-          // Capture progress_pct if present.
+          // Capture progress_pct if present, pinned to the stage it belongs to.
           if (typeof e.progress_pct === "number") {
-            setProgressMap((prev) => ({ ...prev, [id]: e.progress_pct as number }));
+            setProgressMap((prev) => ({
+              ...prev,
+              [id]: { stage: e.stage, pct: e.progress_pct as number },
+            }));
           }
           // Refresh full job state from REST.
           api.getJob(id).then(upsertJob).catch(() => undefined);
@@ -313,23 +341,20 @@ export default function JobProgressBoard() {
   const watchedJobs = jobs.filter((j) => pendingIds.includes(j.id));
   const allDone = watchedJobs.length > 0 && watchedJobs.every((j) => j.stage === 9);
 
-  // Aggregate progress for display.
-  // If SSE has provided progress_pct values, average them across jobs.
-  // Otherwise fall back to deriving a rough estimate from stage.
+  // Aggregate global progress for display. Each job's progress is anchored to
+  // its current stage's [start, end) range; SSE per-stage pct (if matching the
+  // current stage) interpolates inside that range, otherwise we sit at the
+  // start of the stage. This guarantees monotonic forward progress.
   const overallProgress = useMemo(() => {
     if (watchedJobs.length === 0) return 0;
 
-    const progressValues = watchedJobs.map((j) => {
-      const sseProgress = progressMap[j.id];
-      if (typeof sseProgress === "number") return sseProgress;
-      // Fallback: use midpoint of the phase range for the current stage.
-      const phaseNum = STAGE_TO_PHASE[j.stage] ?? 0;
-      const phase = PHASES.find((p) => p.phaseNum === phaseNum);
-      if (!phase) return 0;
-      return (phase.range[0] + phase.range[1]) / 2;
+    const values = watchedJobs.map((j) => {
+      const entry = progressMap[j.id];
+      const stagePct = entry && entry.stage === j.stage ? entry.pct : undefined;
+      return progressForJob(j.stage, stagePct);
     });
 
-    const avg = progressValues.reduce((a, b) => a + b, 0) / progressValues.length;
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
     return Math.min(99, Math.max(0, avg));
   }, [watchedJobs, progressMap]);
 
@@ -340,17 +365,23 @@ export default function JobProgressBoard() {
   }, [watchedJobs]);
 
   const displayProgress = allDone ? 100 : overallProgress;
-  const currentPhase = phaseFromProgress(displayProgress);
-  const currentStageLabel = STAGE_LABELS[highestStage] ?? "대기 중";
+  // Derive phase from the most-advanced stage rather than the averaged
+  // progress so the speech bubble doesn't flicker when the average dips
+  // mid-stage. Falls back to the first phase before any stage starts.
+  const currentPhase = useMemo(() => {
+    const phaseNum = STAGE_TO_PHASE[highestStage] ?? 0;
+    return PHASES.find((p) => p.phaseNum === phaseNum) ?? PHASES[0];
+  }, [highestStage]);
+  const currentStageLabel = STAGE_LABELS[highestStage] ?? "Waiting";
 
   const phaseSpeech = allDone
-    ? "다 만들었어요! 🎉 라이브러리에서 확인해 보세요."
+    ? "All done! Check it out in the library."
     : PHASE_SPEECH[currentPhase.id] ?? PHASE_SPEECH["read"];
 
   const jobCountLabel =
     watchedJobs.length === 1
-      ? `영상 ${watchedJobs.length}개`
-      : `영상 ${watchedJobs.length}개 · 평균 진행도`;
+      ? `${watchedJobs.length} video`
+      : `${watchedJobs.length} videos · avg progress`;
 
   return (
     <div
@@ -403,7 +434,7 @@ export default function JobProgressBoard() {
                 strokeLinejoin="round"
               />
             </svg>
-            홈으로 돌아가기
+            Back to home
           </span>
         </Btn>
         <div style={{ flex: 1 }} />
@@ -477,7 +508,7 @@ export default function JobProgressBoard() {
                 letterSpacing: -0.1,
               }}
             >
-              <span style={{ color: "var(--coral-700)" }}>쇼리</span>가 영상을 만들고 있어요
+              <span style={{ color: "var(--coral-700)" }}>Shori</span> is making your video
             </div>
           </div>
 
@@ -509,11 +540,11 @@ export default function JobProgressBoard() {
               >
                 {allDone ? (
                   <>
-                    <span style={{ color: "var(--mint-500)" }}>영상</span> 완성됐어요!
+                    Your <span style={{ color: "var(--mint-500)" }}>video</span> is ready!
                   </>
                 ) : (
                   <>
-                    <span style={{ color: "var(--coral-500)" }}>영상</span> 만드는 중…
+                    Making your <span style={{ color: "var(--coral-500)" }}>video</span>…
                   </>
                 )}
               </div>
@@ -526,15 +557,15 @@ export default function JobProgressBoard() {
                 }}
               >
                 {allDone
-                  ? "모든 영상이 완성됐어요. 라이브러리에서 확인해 보세요."
-                  : "창을 닫아도 백그라운드에서 계속 진행돼요. 끝나면 알려드릴게요."}
+                  ? "All videos are ready. Check them out in the library."
+                  : "You can close the window — we'll keep working in the background and let you know when it's done."}
               </div>
             </div>
 
             {/* Progress bar card */}
             <ProgressDisplay
               progress={displayProgress}
-              currentPhaseLabel={allDone ? "완료" : currentStageLabel}
+              currentPhaseLabel={allDone ? "Done" : currentStageLabel}
             />
 
             {/* Phase list */}
@@ -544,7 +575,7 @@ export default function JobProgressBoard() {
             {allDone && (
               <div style={{ display: "flex", justifyContent: "flex-start", paddingTop: 4 }}>
                 <Btn variant="primary" size="lg" onClick={() => setView("library")}>
-                  라이브러리 열기 →
+                  Open library →
                 </Btn>
               </div>
             )}
@@ -577,12 +608,12 @@ export default function JobProgressBoard() {
                 animation: "pulse-dot 1.4s ease-in-out infinite",
               }}
             />
-            백그라운드 작업 · 완료 시 알림
+            Running in background · we'll notify you when done
           </>
         )}
         {allDone && (
           <span style={{ color: "var(--mint-900)", fontWeight: 700 }}>
-            ✓ 모든 작업 완료
+            ✓ All jobs complete
           </span>
         )}
       </div>

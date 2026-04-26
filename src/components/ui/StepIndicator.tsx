@@ -10,10 +10,10 @@ interface StepIndicatorProps {
 }
 
 const DEFAULT_STEPS: Step[] = [
-  { label: "PDF 업로드" },
-  { label: "목차 고르기" },
-  { label: "캐릭터 선택" },
-  { label: "생성" },
+  { label: "Upload PDF" },
+  { label: "Pick sections" },
+  { label: "Choose narrator" },
+  { label: "Generate" },
 ];
 
 export default function StepIndicator({ current, steps = DEFAULT_STEPS }: StepIndicatorProps) {

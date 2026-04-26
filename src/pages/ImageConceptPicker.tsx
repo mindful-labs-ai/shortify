@@ -3,136 +3,53 @@ import Shori from "@/components/brand/Shori";
 import SpeechBubble from "@/components/brand/SpeechBubble";
 import Btn from "@/components/ui/Btn";
 import StepIndicator from "@/components/ui/StepIndicator";
-import { api } from "../lib/api";
+import { api, type ImageConcept as ApiConcept } from "../lib/api";
 import { useAppStore } from "../store";
-import shoriPng from "@/assets/shori.png";
 
 // ─────────────────────────────────────────────────────────────
-// Character roster — hard-coded per design; slugs sent verbatim
-// to api.selectImage() as the image_concept_slug.
+// Character roster — fetched live from sidecar (`/image-concepts`).
+// Source of truth is `db.seed.SEED` (seed_image_concepts).
+// `slug` is sent verbatim to api.selectImage().
 // ─────────────────────────────────────────────────────────────
 
 interface Character {
   id: string;
   name: string;
-  tagline: string;
   desc: string;
-  voice: string;
-  pace: string;
+  previewUrl: string;
   color: string;
   bg: string;
   badge: string | null;
-  locked: boolean;
-  asset: "shori" | "placeholder";
 }
 
-const CHARACTERS: Character[] = [
-  {
-    id: "shori",
-    name: "쇼리",
-    tagline: "기본 마스코트",
-    desc: "톡톡 튀는 한 입 가이드. 어디든 잘 어울리는 만능 친구예요.",
-    voice: "밝고 친근한",
-    pace: "빠름",
-    color: "var(--coral-500)",
-    bg: "linear-gradient(135deg, #FFE7DC 0%, #FFD3C0 100%)",
-    badge: "추천",
-    locked: false,
-    asset: "shori",
-  },
-  {
-    id: "luna",
-    name: "루나",
-    tagline: "차분한 해설가",
-    desc: "한 박자 천천히 설명해 줘요. 개념이 무거운 단원에 어울려요.",
-    voice: "차분하고 또렷한",
-    pace: "보통",
-    color: "#7A6CF0",
-    bg: "linear-gradient(135deg, #E5E1FA 0%, #C8C0F0 100%)",
-    badge: null,
-    locked: false,
-    asset: "placeholder",
-  },
-  {
-    id: "pico",
-    name: "피코",
-    tagline: "장난기 많은 친구",
-    desc: "리듬감 있는 말투로 흥미를 끌어요. 짧은 단원에 잘 맞아요.",
-    voice: "발랄하고 빠른",
-    pace: "매우 빠름",
-    color: "#3FB8AF",
-    bg: "linear-gradient(135deg, #DFF4F0 0%, #B6E4DC 100%)",
-    badge: null,
-    locked: false,
-    asset: "placeholder",
-  },
-  {
-    id: "eddy",
-    name: "에디",
-    tagline: "진지한 튜터",
-    desc: "수험·전공 자료에 어울리는 또렷한 진행. 곧 만나요.",
-    voice: "또박또박한",
-    pace: "느림",
-    color: "#C58A4A",
-    bg: "linear-gradient(135deg, #F2E6D6 0%, #DFC9A9 100%)",
-    badge: null,
-    locked: true,
-    asset: "placeholder",
-  },
-];
+// Per-slug visual palette for card backgrounds and accents. Colors are
+// drawn from each character's main color cue defined in the seed bible.
+const TONE_PALETTE: Record<string, { color: string; bg: string }> = {
+  shori: { color: "var(--coral-500)", bg: "linear-gradient(135deg, #FFE7DC 0%, #FFD3C0 100%)" },
+  pip:   { color: "#E5A82E",          bg: "linear-gradient(135deg, #FFF4D6 0%, #FFE49B 100%)" },
+  iris:  { color: "#3FB892",          bg: "linear-gradient(135deg, #E0F7EE 0%, #BCEAD7 100%)" },
+  jay:   { color: "#4A9BFF",          bg: "linear-gradient(135deg, #DDEBFF 0%, #BFD7FA 100%)" },
+  vera:  { color: "#9078D4",          bg: "linear-gradient(135deg, #EFE6FA 0%, #D9C9F2 100%)" },
+  sage:  { color: "#8B7E72",          bg: "linear-gradient(135deg, #ECE5DC 0%, #D6CDC0 100%)" },
+};
+const FALLBACK_PALETTE = { color: "#7A6CF0", bg: "linear-gradient(135deg, #E5E1FA 0%, #C8C0F0 100%)" };
+
+function toCharacter(c: ApiConcept): Character {
+  const palette = TONE_PALETTE[c.slug] ?? FALLBACK_PALETTE;
+  return {
+    id: c.slug,
+    name: c.name,
+    desc: c.description,
+    previewUrl: c.preview_url,
+    color: palette.color,
+    bg: palette.bg,
+    badge: c.slug === "shori" ? "Recommended" : null,
+  };
+}
 
 // ─────────────────────────────────────────────────────────────
 // File-local sub-components
 // ─────────────────────────────────────────────────────────────
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        fontFamily: "var(--font-mono)",
-        fontWeight: 700,
-        color: "var(--coral-700)",
-        background: "var(--cream)",
-        border: "1px solid var(--coral-100)",
-        padding: "3px 8px",
-        borderRadius: 999,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div
-        style={{
-          fontSize: 9,
-          fontWeight: 800,
-          letterSpacing: 0.7,
-          textTransform: "uppercase",
-          color: "var(--ink-mute)",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          marginTop: 2,
-          fontSize: 12,
-          fontWeight: 700,
-          color: "var(--ink)",
-          letterSpacing: -0.1,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
 
 function CharacterPortrait({
   character,
@@ -141,39 +58,7 @@ function CharacterPortrait({
   character: Character;
   picked: boolean;
 }) {
-  if (character.asset === "shori") {
-    return (
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          height: 220,
-          borderRadius: 14,
-          background: character.bg,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "flex-end",
-          justifyContent: "center",
-        }}
-      >
-        <img
-          src={shoriPng}
-          alt="쇼리"
-          style={{
-            position: "absolute",
-            bottom: -28,
-            width: 200,
-            height: 200,
-            objectFit: "contain",
-            transformOrigin: "50% 88%",
-            animation: picked
-              ? "shori-talk 0.9s cubic-bezier(.45,0,.55,1) infinite"
-              : "shori-idle 2.6s cubic-bezier(.45,0,.55,1) infinite",
-          }}
-        />
-      </div>
-    );
-  }
+  const [failed, setFailed] = useState(false);
 
   return (
     <div
@@ -189,55 +74,43 @@ function CharacterPortrait({
         justifyContent: "center",
       }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          position: "absolute",
-          inset: 12,
-          borderRadius: 10,
-          border: `2px dashed ${character.color}66`,
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          width: 130,
-          height: 130,
-          borderRadius: "50%",
-          background: `${character.color}33`,
-          border: `2px solid ${character.color}55`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "var(--font-display)",
-          fontWeight: 900,
-          fontSize: 56,
-          color: character.color,
-          letterSpacing: -2,
-          opacity: 0.85,
-        }}
-      >
-        {character.name.charAt(0)}
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 14,
-          left: 14,
-          fontFamily: "var(--font-mono)",
-          fontSize: 9,
-          fontWeight: 800,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-          color: character.color,
-          background: "rgba(255,255,255,0.7)",
-          border: `1px solid ${character.color}55`,
-          padding: "3px 7px",
-          borderRadius: 999,
-        }}
-      >
-        Placeholder
-      </div>
+      {!failed ? (
+        <img
+          src={character.previewUrl}
+          alt={character.name}
+          onError={() => setFailed(true)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transformOrigin: "50% 88%",
+            animation: picked
+              ? "shori-talk 0.9s cubic-bezier(.45,0,.55,1) infinite"
+              : "shori-idle 2.6s cubic-bezier(.45,0,.55,1) infinite",
+          }}
+        />
+      ) : (
+        <div
+          style={{
+            width: 130,
+            height: 130,
+            borderRadius: "50%",
+            background: `${character.color}33`,
+            border: `2px solid ${character.color}55`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-display)",
+            fontWeight: 900,
+            fontSize: 56,
+            color: character.color,
+            letterSpacing: -2,
+            opacity: 0.85,
+          }}
+        >
+          {character.name.charAt(0)}
+        </div>
+      )}
     </div>
   );
 }
@@ -251,44 +124,36 @@ function CharacterCard({
   picked: boolean;
   onPick: (id: string) => void;
 }) {
-  const { locked } = character;
   return (
     <button
-      onClick={() => !locked && onPick(character.id)}
-      disabled={locked}
+      onClick={() => onPick(character.id)}
       style={{
         textAlign: "left",
         position: "relative",
-        background: locked ? "var(--cloud)" : "var(--cream)",
+        background: "var(--cream)",
         border: picked
           ? "2px solid var(--coral-500)"
-          : locked
-          ? "1.5px dashed var(--hairline-strong)"
           : "1.5px solid var(--hairline-strong)",
         borderRadius: 18,
         padding: 16,
-        cursor: locked ? "not-allowed" : "pointer",
+        cursor: "pointer",
         boxShadow: picked
           ? "4px 6px 0 var(--coral-700), 0 12px 28px rgba(255,107,74,0.18)"
-          : locked
-          ? "none"
           : "3px 4px 0 var(--stamp-soft)",
         transition: "all 160ms cubic-bezier(.2,.9,.3,1.1)",
-        opacity: locked ? 0.55 : 1,
-        filter: locked ? "saturate(0.5)" : "none",
         fontFamily: "var(--font-sans)",
         display: "flex",
         flexDirection: "column",
         gap: 14,
       }}
       onMouseEnter={(e) => {
-        if (locked || picked) return;
+        if (picked) return;
         e.currentTarget.style.transform = "translateY(-2px)";
         e.currentTarget.style.boxShadow =
           "4px 6px 0 var(--stamp-deep), 0 12px 28px rgba(26,22,20,0.10)";
       }}
       onMouseLeave={(e) => {
-        if (locked || picked) return;
+        if (picked) return;
         e.currentTarget.style.transform = "translateY(0)";
         e.currentTarget.style.boxShadow = "3px 4px 0 var(--stamp-soft)";
       }}
@@ -322,7 +187,7 @@ function CharacterCard({
       )}
 
       {/* Recommended badge */}
-      {character.badge && !locked && (
+      {character.badge && (
         <div
           style={{
             position: "absolute",
@@ -346,91 +211,20 @@ function CharacterCard({
         </div>
       )}
 
-      {/* Locked overlay */}
-      {locked && (
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 3,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
-            filter: "saturate(2)",
-          }}
-        >
-          <div
-            style={{
-              transform: "rotate(-8deg)",
-              background: "var(--ink)",
-              color: "var(--cream)",
-              fontFamily: "var(--font-display)",
-              fontWeight: 900,
-              fontSize: 22,
-              letterSpacing: 1.4,
-              textTransform: "uppercase",
-              padding: "10px 24px 10px 22px",
-              borderRadius: 8,
-              border: "2.5px solid var(--cream)",
-              boxShadow: "4px 5px 0 rgba(26,22,20,0.35), 0 0 0 1.5px var(--ink)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              whiteSpace: "nowrap",
-            }}
-          >
-            <svg width="18" height="18" viewBox="0 0 12 12" fill="none">
-              <rect
-                x="2"
-                y="5.5"
-                width="8"
-                height="5.5"
-                rx="1.2"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              />
-              <path
-                d="M 3.7 5.5 V 4 a 2.3 2.3 0 0 1 4.6 0 V 5.5"
-                stroke="currentColor"
-                strokeWidth="1.6"
-              />
-            </svg>
-            Coming&nbsp;soon
-          </div>
-        </div>
-      )}
-
       <CharacterPortrait character={character} picked={picked} />
 
-      {/* Name + tagline */}
+      {/* Name + description */}
       <div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: 22,
-              fontWeight: 900,
-              letterSpacing: -0.6,
-              color: "var(--ink)",
-            }}
-          >
-            {character.name}
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: "var(--ink-mute)",
-              letterSpacing: -0.1,
-            }}
-          >
-            {character.tagline}
-          </div>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 22,
+            fontWeight: 900,
+            letterSpacing: -0.6,
+            color: "var(--ink)",
+          }}
+        >
+          {character.name}
         </div>
         <div
           style={{
@@ -444,60 +238,6 @@ function CharacterCard({
           {character.desc}
         </div>
       </div>
-
-      {/* Voice meta row */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          paddingTop: 10,
-          borderTop: "1px dashed var(--hairline-strong)",
-        }}
-      >
-        <MetaItem label="목소리" value={character.voice} />
-        <div style={{ flex: 1 }} />
-        {/* Preview button — no-op in this version */}
-        <span
-          role="button"
-          tabIndex={locked ? -1 : 0}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (locked) return;
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-          aria-disabled={locked}
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontWeight: 700,
-            fontSize: 11,
-            color: locked ? "var(--ink-faint)" : character.color,
-            background: "transparent",
-            border: `1.5px solid ${locked ? "var(--hairline-strong)" : character.color + "55"}`,
-            borderRadius: 999,
-            padding: "5px 11px",
-            cursor: locked ? "not-allowed" : "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            alignSelf: "center",
-            whiteSpace: "nowrap",
-            userSelect: "none",
-          }}
-        >
-          <svg
-            width="9"
-            height="9"
-            viewBox="0 0 9 9"
-            fill={locked ? "var(--ink-faint)" : character.color}
-          >
-            <path d="M 1.5 1 L 7.5 4.5 L 1.5 8 Z" />
-          </svg>
-          미리듣기
-        </span>
-      </div>
     </button>
   );
 }
@@ -505,12 +245,14 @@ function CharacterCard({
 // Shori coach panel inside side rail
 function ShoriPanel({ selected }: { selected: string | null }) {
   const lines = useMemo<string[]>(() => {
-    if (!selected) return ["누구로 만들까요?", "취향껏 골라봐요."];
-    if (selected === "shori") return ["저예요 저! 잘 부탁해요.", "어디든 잘 어울려요."];
-    if (selected === "luna") return ["루나는 차분해서 멋져요.", "개념 정리에 딱이에요."];
-    if (selected === "pico") return ["피코랑 가면 신나요!", "짧은 단원에 추천!"];
-    if (selected === "eddy") return ["에디는 곧 만나요.", "조금만 기다려 주세요!"];
-    return ["좋은 선택이에요!"];
+    if (!selected) return ["Who should narrate?", "Pick your favorite."];
+    if (selected === "shori") return ["That's me! Nice to meet you.", "I fit anywhere."];
+    if (selected === "pip") return ["Pip is full of curiosity!", "Great for science and puzzles."];
+    if (selected === "iris") return ["Iris is calm and thoughtful.", "Perfect for deep concepts."];
+    if (selected === "jay") return ["Jay gets straight to the point.", "Great for business and tech."];
+    if (selected === "vera") return ["Vera shares warm wisdom.", "Lovely for everyday topics."];
+    if (selected === "sage") return ["Sage explains with patience.", "Great for craft and history."];
+    return ["Great choice!"];
   }, [selected]);
 
   const [idx, setIdx] = useState(0);
@@ -557,15 +299,17 @@ function ShoriPanel({ selected }: { selected: string | null }) {
 
 // Left side rail
 function SideRail({
+  characters,
   selected,
   pendingCount,
   filename,
 }: {
+  characters: Character[];
   selected: string | null;
   pendingCount: number;
   filename: string;
 }) {
-  const character = CHARACTERS.find((c) => c.id === selected) ?? null;
+  const character = characters.find((c) => c.id === selected) ?? null;
 
   return (
     <aside
@@ -593,7 +337,7 @@ function SideRail({
             marginBottom: 10,
           }}
         >
-          이번에 만들 영상
+          What we're building
         </div>
         <div
           style={{
@@ -627,7 +371,7 @@ function SideRail({
               letterSpacing: -0.1,
             }}
           >
-            {pendingCount}개 섹션 선택됨
+            {pendingCount} sections selected
           </div>
         </div>
       </div>
@@ -653,7 +397,7 @@ function SideRail({
             marginBottom: 6,
           }}
         >
-          선택된 내레이터
+          Selected narrator
         </div>
         {character ? (
           <>
@@ -669,17 +413,23 @@ function SideRail({
               {character.name}
             </div>
             <div
-              style={{ marginTop: 2, fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.5 }}
+              style={{
+                marginTop: 6,
+                fontSize: 12,
+                color: "var(--ink-soft)",
+                lineHeight: 1.5,
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 4,
+                overflow: "hidden",
+              } as React.CSSProperties}
             >
-              {character.tagline}
-            </div>
-            <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 6 }}>
-              <Chip>{character.voice}</Chip>
+              {character.desc}
             </div>
           </>
         ) : (
           <div style={{ fontSize: 12, color: "var(--ink-mute)" }}>
-            마음에 드는 내레이터를 골라 주세요.
+            Pick a narrator you like.
           </div>
         )}
       </div>
@@ -702,8 +452,16 @@ export default function ImageConceptPicker() {
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [characters, setCharacters] = useState<Character[]>([]);
 
-  const character = CHARACTERS.find((c) => c.id === selected) ?? null;
+  useEffect(() => {
+    api
+      .imageConcepts()
+      .then((r) => setCharacters(r.concepts.map(toCharacter)))
+      .catch((e) => setErr(`Failed to load characters: ${e}`));
+  }, []);
+
+  const character = characters.find((c) => c.id === selected) ?? null;
 
   const apply = async () => {
     if (!selected || pendingJobIds.length === 0) return;
@@ -737,6 +495,7 @@ export default function ImageConceptPicker() {
   return (
     <div style={{ display: "flex", height: "100%", minHeight: 0, background: "var(--cloud)" }}>
       <SideRail
+        characters={characters}
         selected={selected}
         pendingCount={pendingJobIds.length}
         filename={pdf?.filename ?? ""}
@@ -758,7 +517,7 @@ export default function ImageConceptPicker() {
                 marginBottom: 6,
               }}
             >
-              내레이터를 골라요
+              Pick a narrator
             </div>
             <div
               style={{
@@ -771,7 +530,7 @@ export default function ImageConceptPicker() {
                 textWrap: "balance",
               } as React.CSSProperties}
             >
-              누가 <span style={{ color: "var(--coral-500)" }}>설명</span>해 줄까요?
+              Who'll <span style={{ color: "var(--coral-500)" }}>narrate</span> for you?
             </div>
             <div
               style={{
@@ -782,7 +541,7 @@ export default function ImageConceptPicker() {
                 maxWidth: 580,
               }}
             >
-              영상에서 안내를 맡을 친구예요. 단원 분위기에 맞춰 골라보세요. 나중에 언제든 바꿀 수 있어요.
+              They'll guide your video. Pick whoever matches the tone — you can switch later anytime.
             </div>
           </div>
 
@@ -795,7 +554,7 @@ export default function ImageConceptPicker() {
               gap: 18,
             }}
           >
-            {CHARACTERS.map((c) => (
+            {characters.map((c) => (
               <CharacterCard
                 key={c.id}
                 character={c}
@@ -873,12 +632,12 @@ export default function ImageConceptPicker() {
               }}
             >
               {character
-                ? `${character.name}와(과) 함께 ${pendingJobIds.length}개 영상을 만들어요.`
-                : "마음에 드는 친구를 골라 주세요."}
+                ? `Make ${pendingJobIds.length} video${pendingJobIds.length === 1 ? "" : "s"} with ${character.name}.`
+                : "Pick a narrator you like."}
             </div>
 
             <Btn variant="ghost" size="md" onClick={() => setView("toc")}>
-              뒤로
+              Back
             </Btn>
             <Btn
               variant="primary"
@@ -886,7 +645,7 @@ export default function ImageConceptPicker() {
               disabled={!selected || busy}
               onClick={apply}
             >
-              {busy ? "시작 중…" : character ? "영상 만들기 →" : "다음"}
+              {busy ? "Starting…" : character ? "Make videos →" : "Next"}
             </Btn>
           </div>
         </div>
