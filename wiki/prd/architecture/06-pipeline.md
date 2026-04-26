@@ -175,7 +175,7 @@ def compose_final(
 | `gemini-3.1-flash-image-preview` 컨텐츠 정책 거부 | 프롬프트 자동 sanitize 후 1회 재시도, 실패 시 fallback 정적 이미지 |
 | `veo-3.1-generate-preview` 5초 클립 깨짐 | 해당 씬만 재생성 |
 | `gemini-3.1-flash-tts-preview` 음성 끊김 | 전체 재생성 (TTS는 빠름) |
-| `gemini-3.1-flash-preview` 정렬 매칭 실패 | char-ratio 폴백 (video-cli 검증된 방식) |
+| `gemini-3.1-flash-preview` 정렬 매칭 실패 | char-ratio 폴백 |
 | ffmpeg 죽음 | stderr 로그 캡처, stage = -1, 사용자 재시도 가능 |
 
 ## 출력물

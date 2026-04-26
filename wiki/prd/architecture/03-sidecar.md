@@ -2,7 +2,7 @@
 
 ## 역할
 
-- 영상 생성 파이프라인 실행 (video-cli 포팅 코어)
+- 영상 생성 파이프라인 실행
 - localhost FastAPI로 React 프론트와 통신
 - SQLite로 영속화 + asyncio 워커로 백그라운드 작업 처리
 
@@ -37,7 +37,7 @@ sidecar/
     ├── queue/
     │   ├── persistent.py          # SQLite-backed asyncio queue
     │   └── workers.py             # extract_toc, conceptize, generate_video
-    ├── pipeline/                  # video-cli 포팅
+    ├── pipeline/
     │   ├── ingest_pdf.py
     │   ├── conceptizer.py
     │   ├── scene_splitter.py
