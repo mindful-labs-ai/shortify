@@ -41,12 +41,24 @@ class Settings:
 
     n_workers: int = int(os.environ.get("SHORTIFY_WORKERS", "2"))
 
-    # Gemini model IDs (변경 결정 사항)
-    model_text: str = "gemini-3.1-flash-lite-preview"
-    model_image: str = "gemini-3.1-flash-image-preview"
-    model_video: str = "veo-3.1-generate-preview"
-    model_tts: str = "gemini-3.1-flash-tts-preview"
-    model_audio: str = "gemini-3.1-flash-preview"
+    # Gemini model IDs. v1beta 의 정확한 ID 가 키 권한에 따라 달라지므로 env 우선.
+    # 어떤 ID 가 활성인지는 ``GET /admin/gemini/models`` 로 확인 가능.
+    # ID 는 SDK 가 받아들이는 정식 형태인 'models/<name>' 으로 통일.
+    model_text: str = os.environ.get(
+        "SHORTIFY_MODEL_TEXT", "models/gemini-3.1-flash-lite-preview"
+    )
+    model_image: str = os.environ.get(
+        "SHORTIFY_MODEL_IMAGE", "models/gemini-3.1-flash-image-preview"
+    )
+    model_video: str = os.environ.get(
+        "SHORTIFY_MODEL_VIDEO", "models/veo-3.1-fast-generate-preview"
+    )
+    model_tts: str = os.environ.get(
+        "SHORTIFY_MODEL_TTS", "models/gemini-3.1-flash-tts-preview"
+    )
+    model_audio: str = os.environ.get(
+        "SHORTIFY_MODEL_AUDIO", "models/gemini-3.1-flash-lite-preview"
+    )
 
     # Veo I2V duration. 모델별 허용 범위 다름 (현 Veo 3.x 류는 4~8 inclusive).
     # 환경변수로 조정 가능: SHORTIFY_VIDEO_DURATION_SEC.
