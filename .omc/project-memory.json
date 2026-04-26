@@ -29,6 +29,49 @@
   },
   "customNotes": [],
   "directoryMap": {},
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "README.md",
+      "accessCount": 13,
+      "lastAccessed": 1777164910688,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/plan.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164534061,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/01-overview.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164534202,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164534214,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/IDEA.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164534794,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/06-pipeline.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164541462,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/08-security.md",
+      "accessCount": 1,
+      "lastAccessed": 1777164542244,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }

@@ -1,0 +1,160 @@
+# ───────────── macOS ─────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# ───────────── IDE / Editor ─────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.cursor/
+
+# ───────────── Env / Secrets ─────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.shortify-dev.toml
+
+# Apple signing
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+AuthKey_*.p8
+
+# Sparkle private keys (절대 커밋 금지)
+sparkle_priv.pem
+sparkle_*.key
+
+# ───────────── Node / pnpm / Vite (frontend) ─────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.pnpm-store/
+*.local
+
+# Yarn
+.yarn/cache
+.yarn/install-state.gz
+.pnp.*
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Vite test output
+coverage/
+*.lcov
+.nyc_output
+
+# ───────────── Rust / Cargo / Tauri ─────────────
+src-tauri/target/
+src-tauri/gen/
+src-tauri/Cargo.lock.bak
+**/*.rs.bk
+
+# Tauri build artifacts
+src-tauri/WixTools/
+src-tauri/release/
+
+# ───────────── Python (sidecar) ─────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# venv
+sidecar/.venv/
+sidecar/venv/
+sidecar/env/
+.venv/
+venv/
+
+# Build / distribution
+sidecar/build/
+sidecar/dist/
+sidecar/*.egg-info/
+sidecar/.eggs/
+*.egg
+
+# PyInstaller
+sidecar/bin/
+*.spec.bak
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# Jupyter / notebooks
+.ipynb_checkpoints/
+
+# ───────────── Bundled binaries (큰 파일 — 별도 관리) ─────────────
+assets/ffmpeg/ffmpeg
+assets/ffmpeg/ffprobe
+!assets/ffmpeg/.gitkeep
+!assets/ffmpeg/README.md
+
+# 사용자가 로컬에서 받아오는 BGM은 라이선스에 따라 커밋 여부 결정
+# assets/bgm/*.mp3
+# assets/bgm/*.wav
+
+# ───────────── Build / Release 산출물 ─────────────
+*.dmg
+*.zip
+*.tar.gz
+Shortify.app/
+Shortify-*.dmg.sig
+appcast.local.xml
+
+# ───────────── 런타임 / 로그 / 캐시 ─────────────
+*.log
+logs/
+.cache/
+tmp/
+.tmp/
+
+# 로컬 SQLite (개발 중 생기는 것)
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+
+# 로컬 출력물 (영상 생성 결과)
+output/
+sample-output/
+
+# ───────────── 사이드카 dev 산출물 ─────────────
+sidecar/shortify_sidecar/__pycache__/
+sidecar/.pytest_cache/
+
+# ───────────── Misc ─────────────
+.history/
+.serena/
+.aider*
+
+# OMC / Claude Code 작업 흔적은 커밋 안 함
+.omc/state/
+.omc/logs/
+.omc/research/
+.claude/local/
