@@ -7,7 +7,7 @@
 
 ## 핵심 추천
 
-**`shortify`를 신규 독립 레포로 생성**하고, **macOS 네이티브 앱 셸 + Python 사이드카 프로세스** 구조로 빌드한다. video-cli의 검증된 영상 생성 파이프라인은 Python 사이드카에 그대로 포팅한다.
+**`shortify`를 신규 독립 레포로 생성**하고, **macOS 네이티브 앱 셸 + Python 사이드카 프로세스** 구조로 빌드한다.
 
 ### 아키텍처 선택: Tauri + Python 사이드카 (추천)
 
@@ -18,11 +18,11 @@
 | C. Electron + Python sidecar                        | 자료 풍부, 빠른 시작                                                                       | 번들 크기 ~150MB+, 메모리 무거움, "Mac스럽지 않음"                 | 비추         |
 | D. SwiftUI + 파이프라인 Swift 재구현                | 단일 언어, 가장 빠른 런타임                                                                | google-genai SDK 재구현에 수개월                                   | 비현실적     |
 
-**결정 기준**: video-cli의 모든 영상 파이프라인이 Python 의존성 (ffmpeg-python, pyJianYingDraft, google-genai SDK)이라 **재작성은 비현실적**. 따라서 Python을 사이드카로 번들링하는 것이 필수. 그 위에 어떤 셸을 올리느냐의 선택만 남음.
+**결정 기준**: 영상 파이프라인이 Python 의존성 (ffmpeg-python, pyJianYingDraft, google-genai SDK)이라 **재작성은 비현실적**. 따라서 Python을 사이드카로 번들링하는 것이 필수. 그 위에 어떤 셸을 올리느냐의 선택만 남음.
 
-### 왜 별도 레포인가
-- **제품 형태가 완전히 다르다**: video-cli는 내부 CLI. shortify는 외부 사용자가 다운로드해서 쓰는 앱.
-- **빌드 파이프라인이 다르다**: 코드 사이닝, notarization, DMG/pkg 패키징, Sparkle 자동 업데이트 등 macOS 앱 인프라 필요.
+### 왜 독립 레포인가
+- **제품 형태**: shortify는 외부 사용자가 다운로드해서 쓰는 macOS 앱.
+- **빌드 파이프라인**: 코드 사이닝, notarization, DMG/pkg 패키징, Sparkle 자동 업데이트 등 macOS 앱 인프라 필요.
 - **저작권·라이선스 경계**: 외부 배포 → BGM·레퍼런스 자산 라이선스 분리 필수.
 
 ---
@@ -81,7 +81,7 @@
                           │ orchestrates                      │ status / events
                           ▼                                   ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ L5. DOMAIN / PIPELINE LAYER                          [ video-cli 포팅된 코어 ]│
+│ L5. DOMAIN / PIPELINE LAYER                                                  │
 │ ─────────────────────────────────────────────────────────────────────────────│
 │                                                                              │
 │   ingest_pdf ──► conceptizer ──► scene_splitter ──► image_gen                │
@@ -175,7 +175,7 @@
 | L2 Shell/Native Bridge | OS API 접근, 사이드카 생애주기, 보안   | Tauri, Rust, security-framework                                                                                                                                                   |
 | L3 API                 | localhost RPC, 인증, SSE 푸시          | FastAPI, uvicorn                                                                                                                                                                  |
 | L4 Application/Service | 유즈케이스 오케스트레이션, 큐          | asyncio, persistent SQLite queue                                                                                                                                                  |
-| L5 Domain/Pipeline     | 영상 생성 도메인 로직 (video-cli 포팅) | pypdf, Pillow, ffmpeg-python, google-genai                                                                                                                                        |
+| L5 Domain/Pipeline     | 영상 생성 도메인 로직                  | pypdf, Pillow, ffmpeg-python, google-genai                                                                                                                                        |
 | L6 Infrastructure      | 영속성, 비밀, 번들 바이너리            | SQLite, 로컬 FS, Keychain, ffmpeg                                                                                                                                                 |
 | L7 External            | 외부 AI/미디어 API                     | Google Gemini API (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`) |
 
@@ -464,7 +464,7 @@ shortify/
 │   │   ├── queue/
 │   │   │   ├── persistent.py      # SQLite-backed asyncio queue
 │   │   │   └── workers.py
-│   │   ├── pipeline/              # video-cli에서 포팅
+│   │   ├── pipeline/
 │   │   │   ├── ingest_pdf.py
 │   │   │   ├── conceptizer.py
 │   │   │   ├── image_gen.py
@@ -648,26 +648,25 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 
 ---
 
-## video-cli 자산 포팅 매핑
+## 파이프라인 모듈 구성
 
-| video-cli 원본                     | shortify 위치                            | 변경 사항                                          |
-| ---------------------------------- | ---------------------------------------- | -------------------------------------------------- |
-| `d0po_video_cli/image_gen.py`      | `sidecar/.../pipeline/image_gen.py`      | 프롬프트는 `image_concept` 프리셋이 주입           |
-| `d0po_video_cli/video_gen.py`      | `sidecar/.../pipeline/video_gen.py`      | 그대로                                             |
-| `d0po_video_cli/narration_gen.py`  | `sidecar/.../pipeline/narration_gen.py`  | voice·speed 학습형 기본값                          |
-| `d0po_video_cli/alignment.py`      | `sidecar/.../pipeline/alignment.py`      | `gemini-3.1-flash-preview` 오디오 이해 호출로 교체 |
-| `d0po_video_cli/rhythm_cut.py`     | `sidecar/.../pipeline/rhythm_cut.py`     | 그대로                                             |
-| `d0po_video_cli/compose_v3.py`     | `sidecar/.../pipeline/compose.py`        | overlay slot 확장, 번들 ffmpeg 경로 사용           |
-| `d0po_video_cli/overlays.py`       | `sidecar/.../pipeline/overlays.py`       | `term_highlight()` + `citation_footer()` 추가      |
-| `d0po_video_cli/scene_splitter.py` | `sidecar/.../pipeline/scene_splitter.py` | 교육 톤 system prompt                              |
-| `d0po_video_cli/effects.py`        | `sidecar/.../pipeline/effects.py`        | 톤 뉴트럴                                          |
-| `d0po_video_cli/make_mask.py`      | `sidecar/.../pipeline/make_mask.py`      | 그대로                                             |
+| 모듈                                     | 역할                                               |
+| ---------------------------------------- | -------------------------------------------------- |
+| `sidecar/.../pipeline/image_gen.py`      | 프롬프트는 `image_concept` 프리셋이 주입           |
+| `sidecar/.../pipeline/video_gen.py`      | I2V 클립 생성                                      |
+| `sidecar/.../pipeline/narration_gen.py`  | voice·speed 학습형 기본값                          |
+| `sidecar/.../pipeline/alignment.py`      | `gemini-3.1-flash-preview` 오디오 이해             |
+| `sidecar/.../pipeline/rhythm_cut.py`     | 나레이션 박자에 맞춘 컷 계획                       |
+| `sidecar/.../pipeline/compose.py`        | overlay slot 확장, 번들 ffmpeg 경로 사용           |
+| `sidecar/.../pipeline/overlays.py`       | `term_highlight()` + `citation_footer()`           |
+| `sidecar/.../pipeline/scene_splitter.py` | 교육 톤 system prompt                              |
+| `sidecar/.../pipeline/effects.py`        | 톤 뉴트럴                                          |
+| `sidecar/.../pipeline/make_mask.py`      | 둥근 모서리 마스크 생성                            |
 
-**포팅 시 주의**:
-- 모듈명 `d0po_video_cli` → `shortify_sidecar.pipeline`
-- d0po 전용 하드코딩 (보라 토끼, 핫핑크 네온) 제거
+**구현 시 주의**:
+- 모듈 네임스페이스는 `shortify_sidecar.pipeline`
 - ffmpeg 경로는 `os.environ["SHORTIFY_FFMPEG"]` 또는 사이드카 부팅 시 주입 (`/Applications/Shortify.app/Contents/Resources/ffmpeg`)
-- CLI 진입점 제거, 함수 호출 형태로 워커가 직접 사용
+- CLI 진입점 없음, 함수 호출 형태로 워커가 직접 사용
 - 모든 출력 경로는 `storage/paths.py`의 `app_support_dir()` 경유
 
 ---
@@ -678,7 +677,7 @@ async fn check_for_updates() -> Result<UpdateInfo, String> {...}
 - 신규 GitHub 레포 (`mindful-labs/shortify`)
 - Tauri 2 + React + Vite 스캐폴드
 - Python 사이드카 빈 FastAPI 앱
-- video-cli 파이프라인 코드 포팅 (위 매핑표대로)
+- 파이프라인 모듈 스켈레톤 (위 표대로)
 
 ### Phase 1 — 사이드카 통합 (2~3일)
 - Tauri ↔ Python 사이드카 spawn / health / 종료 흐름

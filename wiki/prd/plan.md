@@ -7,16 +7,13 @@
 
 ## 핵심 추천
 
-**별도 레포로 분기하지 말고, 현재 `video-cli` 레포에 새 브랜드(`brands/shortify/`)로 추가한다.**
+**`shortify`를 신규 독립 레포로 구성**하고, 브랜드 중립 코어 위에 교육형 프로필을 얹는 구조로 빌드한다.
 
-- 현재 아키텍처는 이미 "브랜드 중립 코어 + per-brand 프로필"로 진화 중 (`AGENTS.md`에 레이어드 머지 순서 명시).
-- Shortify는 d0po와 파이프라인의 **약 80%**를 공유 — `gemini-3.1-flash-image-preview` → `veo-3.1-generate-preview` → `gemini-3.1-flash-tts-preview` → `gemini-3.1-flash-preview` (정렬) → 리듬 컷 → 9:16 컴포즈 스택 그대로 재활용 가능.
-- 진짜 새 작업은 두 가지:
+- 아키텍처는 "브랜드 중립 코어 + per-brand 프로필" (`AGENTS.md`에 레이어드 머지 순서 명시).
+- 영상 스택은 `gemini-3.1-flash-image-preview` → `veo-3.1-generate-preview` → `gemini-3.1-flash-tts-preview` → `gemini-3.1-flash-preview` (정렬) → 리듬 컷 → 9:16 컴포즈.
+- 새 작업 두 가지:
   1. **지식 인제스트** (PDF / URL / 마크다운 / 유튜브 자막 → 정제 텍스트)
-  2. **교육형 비주얼 스타일** (애니 캐릭터 → 다이어그램·키워드 강조)
-- 레포를 분기하면 작은 차이 대비 유지보수 비용이 두 배.
-
-**트레이드오프**: 향후 shortify가 크게 분기될 가능성(다른 비율, 웹 앱화, 다른 런타임)이 있다면 분리가 어려워진다. 완화책으로 shortify 도메인 코드는 `brands/shortify/` + `shortify/` 모듈에만 두고, 코어로 새어들어가지 않게 경계를 지킨다.
+  2. **교육형 비주얼 스타일** (다이어그램·키워드 강조)
 
 ---
 
@@ -32,18 +29,18 @@
 
 ---
 
-## 파이프라인 (d0po 대비 델타)
+## 파이프라인
 
 ```
 지식 소스 (URL / PDF / MD / 자막)
-  └─> Ingestor          [신규] fetch + clean + chunk
-        └─> Conceptizer [신규] LLM이 한 개념 + 4비트 학습 구조 추출
-              └─> Scene planner (scene_splitter 재사용, 교육 톤으로 재튜닝)
+  └─> Ingestor          fetch + clean + chunk
+        └─> Conceptizer LLM이 한 개념 + 4비트 학습 구조 추출
+              └─> Scene planner (scene_splitter, 교육 톤)
                     └─> Image gen (`gemini-3.1-flash-image-preview` — 다이어그램/일러스트 프리셋)
                           └─> I2V (`veo-3.1-generate-preview` — 모션 최소화, 호흡 느리게)
                                 └─> Narration (`gemini-3.1-flash-tts-preview` — 설명형 보이스)
-                                      └─> `gemini-3.1-flash-preview` 정렬 + 리듬 컷 (그대로 재사용)
-                                            └─> Compose v3 + [신규] 키워드 팝, 용어 강조, 출처 인용 오버레이
+                                      └─> `gemini-3.1-flash-preview` 정렬 + 리듬 컷
+                                            └─> Compose v3 + 키워드 팝, 용어 강조, 출처 인용 오버레이
                                                   └─> final.mp4
 ```
 
@@ -59,15 +56,15 @@ brands/shortify/
 └── templates/          # 4비트 학습 구조 템플릿
 ```
 
-**`brand.yaml` 핵심 차이점**:
+**`brand.yaml` 핵심 값**:
 
-| 필드                       | d0po               | shortify                         |
-| -------------------------- | ------------------ | -------------------------------- |
-| `tts.speed`                | 1.4x               | **1.0~1.1x** (학습용은 천천히)   |
-| `image.style_preset`       | Anime illustration | **Diagram / 교육 일러스트**      |
-| `effects.subtitle_palette` | 웜 앰버            | **뉴트럴 + 핵심 용어 강조 컬러** |
-| `effects.footer_slot`      | 없음               | **출처 인용 footer**             |
-| `bgm.volume`               | 0.13               | 0.10 (집중 방해 최소)            |
+| 필드                       | shortify                         |
+| -------------------------- | -------------------------------- |
+| `tts.speed`                | 1.0~1.1x (학습용은 천천히)       |
+| `image.style_preset`       | Diagram / 교육 일러스트          |
+| `effects.subtitle_palette` | 뉴트럴 + 핵심 용어 강조 컬러     |
+| `effects.footer_slot`      | 출처 인용 footer                 |
+| `bgm.volume`               | 0.10 (집중 방해 최소)            |
 
 ---
 
@@ -80,7 +77,7 @@ brands/shortify/
 | `shortify/ingest/youtube.py`  | yt-dlp + 자동 자막으로 유튜브 → 텍스트                                                        |
 | `shortify/ingest/markdown.py` | 마크다운 frontmatter 파싱 + 본문                                                              |
 | `shortify/conceptizer.py`     | `gemini-3.1-flash-lite-preview` 호출 → `{concept, hook, beats[4], keywords[], citation}` JSON |
-| `d0po_video_cli/overlays.py`  | `term_highlight()` + `citation_footer()` 추가 (additive, d0po 무영향)                         |
+| `shortify/overlays.py`        | `term_highlight()` + `citation_footer()`                                                      |
 
 ---
 
@@ -124,7 +121,7 @@ shortify generate --source <url|pdf|md> --out <dir>
 
 1. **소스 우선순위**: v0에서 가장 중요한 입력 포맷은? (URL 아티클 / PDF / 유튜브 자막 → Phase 2 순서 결정)
    1. 답변: PDF
-2. **언어**: d0po처럼 한국어 우선? 영어 우선? 이중 언어?
+2. **언어**: 한국어 우선? 영어 우선? 이중 언어?
    1. 답변: 모든 UI 노출 언어는 영어
 3. **개념 단위**: 한 영상 = 한 개념 (60초, 집중형) vs. 한 소스 → 다중 영상 시리즈?
    1. 답변: 한 영상 = 한 개념
@@ -133,17 +130,17 @@ shortify generate --source <url|pdf|md> --out <dir>
 
 ---
 
-## 참고: d0po 파이프라인 자산 (재사용 가능)
+## 파이프라인 모듈 구성
 
-| 자산                                                | 위치              | shortify 재사용 여부                           |
-| --------------------------------------------------- | ----------------- | ---------------------------------------------- |
-| `image_gen.py`                                      | `d0po_video_cli/` | 그대로 재사용 (브랜드 프로필로 톤 변경)        |
-| `video_gen.py` (`veo-3.1-generate-preview`)         | `d0po_video_cli/` | 그대로                                         |
-| `narration_gen.py` (`gemini-3.1-flash-tts-preview`) | `d0po_video_cli/` | 그대로 (voice·speed만 brand.yaml로 오버라이드) |
-| `alignment.py` (`gemini-3.1-flash-preview`)         | `d0po_video_cli/` | 그대로                                         |
-| `rhythm_cut.py`                                     | `d0po_video_cli/` | 그대로                                         |
-| `compose_v3.py`                                     | `d0po_video_cli/` | overlay slot 확장 필요                         |
-| `overlays.py`                                       | `d0po_video_cli/` | term_highlight + citation_footer 추가          |
-| `scene_splitter.py`                                 | `d0po_video_cli/` | 교육 톤 system prompt만 brand 주입             |
+| 모듈                                                | 비고                                           |
+| --------------------------------------------------- | ---------------------------------------------- |
+| `image_gen.py`                                      | 브랜드 프로필로 톤 변경                        |
+| `video_gen.py` (`veo-3.1-generate-preview`)         | I2V 클립 생성                                  |
+| `narration_gen.py` (`gemini-3.1-flash-tts-preview`) | voice·speed는 brand.yaml로 오버라이드          |
+| `alignment.py` (`gemini-3.1-flash-preview`)         | 단어 단위 타임스탬프                           |
+| `rhythm_cut.py`                                     | 박자 기반 컷 계획                              |
+| `compose_v3.py`                                     | overlay slot 확장                              |
+| `overlays.py`                                       | term_highlight + citation_footer               |
+| `scene_splitter.py`                                 | 교육 톤 system prompt를 brand가 주입           |
 
-**비용 추정**: d0po와 동일 (~$2.70/영상), 단 LLM 호출 비용($0.05~$0.20/영상) 추가.
+**비용 추정**: 영상 미디어 ~$2.70/영상 + LLM 호출 비용 $0.05~$0.20/영상.

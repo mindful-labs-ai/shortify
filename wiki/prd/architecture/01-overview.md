@@ -28,7 +28,7 @@
 | **L2 Shell / Native Bridge** | OS API 접근, 사이드카 생애주기, 보안 | Tauri 2, Rust, security-framework |
 | **L3 API** | localhost RPC, 인증, SSE 푸시 | FastAPI, uvicorn |
 | **L4 Application / Service** | 유즈케이스 오케스트레이션, 큐 | asyncio, persistent SQLite queue |
-| **L5 Domain / Pipeline** | 영상 생성 로직 (video-cli 포팅) | pypdf, Pillow, ffmpeg-python, google-genai |
+| **L5 Domain / Pipeline** | 영상 생성 로직 | pypdf, Pillow, ffmpeg-python, google-genai |
 | **L6 Infrastructure** | 영속성, 비밀, 번들 바이너리 | SQLite, 로컬 FS, Keychain, ffmpeg |
 | **L7 External** | 외부 AI/미디어 API | Google Gemini API (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`) |
 
@@ -68,7 +68,7 @@
 └─────────────────────────┬────────────────────────────────────────────────────┘
                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│ L5. DOMAIN / PIPELINE                              [ video-cli 포팅된 코어   ]│
+│ L5. DOMAIN / PIPELINE                                                        │
 │  ingest_pdf → conceptizer → scene_splitter → image_gen → video_gen →         │
 │  narration_gen → alignment → rhythm_cut → compose → overlays → final.mp4     │
 └─────────────────────────┬────────────────────────────────────────────────────┘
@@ -96,7 +96,7 @@
 
 ## 핵심 결정 (왜 이 구조인가)
 
-1. **Python 사이드카 필수**: video-cli의 영상 파이프라인 의존성 (ffmpeg-python, pyJianYingDraft, google-genai SDK)이 Python 전용. 재구현은 비현실적.
+1. **Python 사이드카 필수**: 영상 파이프라인 의존성 (ffmpeg-python, pyJianYingDraft, google-genai SDK)이 Python 전용. 재구현은 비현실적.
 2. **Tauri 셸 선택**: Electron 대비 번들 ~10MB, Rust 안전성, macOS API 풍부.
 3. **외부 백엔드 없음**: 모든 데이터는 로컬에. 인프라 비용 0원, 프라이버시 강함.
 4. **SQLite + asyncio queue**: Postgres/Redis/Celery 불필요. 단일 사용자 전제로 단순화.

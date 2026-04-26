@@ -14,7 +14,7 @@ Shortify는 PDF 한 권을 드롭하면, 사용자가 선택한 목차 단위마
 - **출력**: 1080×1920, 30fps, 30~60초 MP4
 - **타겟**: 하루 한 개념씩 마이크로러닝하고 싶은 학습자
 - **차별점**: 출처 자동 인용, 핵심 용어 하이라이트, 다이어그램 중심 비주얼
-- **영상 파이프라인 출처**: [mindful-labs-ai/video-cli](https://github.com/mindful-labs-ai/video-cli)의 9:16 컴포즈 스택을 Python 사이드카로 포팅하되, **모든 외부 AI 호출은 Google Gemini API로 통합** (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`)
+- **AI 스택**: 모든 외부 AI 호출은 Google Gemini API로 통합 (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`)
 
 ---
 
@@ -42,7 +42,7 @@ Shortify는 PDF 한 권을 드롭하면, 사용자가 선택한 목차 단위마
 | L2 Shell / Native Bridge | OS API, 사이드카 생애주기, 보안 | Tauri 2, Rust, security-framework |
 | L3 API | localhost RPC, 인증, SSE 푸시 | FastAPI, uvicorn |
 | L4 Application / Service | 유즈케이스 오케스트레이션, 큐 | asyncio, persistent SQLite queue |
-| L5 Domain / Pipeline | 영상 생성 로직 (video-cli 포팅) | pypdf, Pillow, ffmpeg-python, google-genai |
+| L5 Domain / Pipeline | 영상 생성 로직 | pypdf, Pillow, ffmpeg-python, google-genai |
 | L6 Infrastructure | 영속성, 비밀, 번들 바이너리 | SQLite, 로컬 FS, Keychain, ffmpeg |
 | L7 External | 외부 AI/미디어 API | Google Gemini API (`gemini-3.1-flash-lite-preview` + `gemini-3.1-flash-image-preview` + `veo-3.1-generate-preview` + `gemini-3.1-flash-tts-preview` + `gemini-3.1-flash-preview`) |
 
