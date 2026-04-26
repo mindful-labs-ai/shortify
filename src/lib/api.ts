@@ -28,6 +28,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 // ─────────── 도메인 타입 (sidecar 스키마와 동기화) ───────────
 export type TocItem = { idx: number; title: string; page_start: number; page_end: number };
 export type Pdf = { id: string; filename: string; page_count: number; toc: TocItem[] };
+export type PdfSummary = {
+  id: string;
+  filename: string;
+  page_count: number | null;
+  size_bytes: number | null;
+  toc_count: number;
+  has_toc: boolean;
+  created_at: string | null;
+  deleted_at: string | null;
+};
+export type UploadResult = {
+  pdf_id: string;
+  page_count: number | null;
+  deduped: boolean;
+  toc_present: boolean;
+};
 export type ImageConcept = { slug: string; name: string; description: string; preview_url: string };
 export type Job = {
   id: string;
@@ -48,8 +64,10 @@ export const api = {
   uploadPdf: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return request<{ pdf_id: string }>("/upload", { method: "POST", body: fd });
+    return request<UploadResult>("/upload", { method: "POST", body: fd });
   },
+
+  listPdfs: () => request<{ pdfs: PdfSummary[] }>("/pdfs"),
 
   getToc: (pdfId: string) => request<Pdf>(`/pdfs/${pdfId}/toc`),
 
