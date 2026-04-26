@@ -23,6 +23,7 @@ from ..db.models import Job, JobEvent, Pdf
 from ..db.session import session_factory
 from ..pipeline import get_pipeline
 from ..pipeline._trace import current_job_id
+from ..settings import settings
 from ..storage.paths import output_dir
 from .base import Task, TaskQueue
 
@@ -46,6 +47,10 @@ async def _set_stage(
         values["stage_message"] = message
     if error is not None:
         values["error"] = error
+    elif stage >= 0:
+        # 정상 진행 stage (>=0) 로 들어가면 이전 실패 잔재 error 를 비운다.
+        # stage=-1 진입 시에는 호출자가 error 를 채워서 보내므로 영향 없음.
+        values["error"] = None
     if output_video_path is not None:
         values["output_video_path"] = output_video_path
     if duration_ms is not None:
@@ -141,8 +146,11 @@ async def _handle_generate_video(task: Task) -> None:
     started = datetime.now(tz=timezone.utc)
     narration_text = " ".join(b["text"] for b in job.conceptized_json["beats"])
 
-    # ── Stage 4: Imaging (이미 14장 있으면 재사용) ──────────────────
-    scenes = pipeline.split_scenes(job.conceptized_json)
+    # ── Stage 4: Imaging (이미 N장 있으면 재사용) ──────────────────
+    n_scenes = settings().scene_count
+    scenes = pipeline.split_scenes(job.conceptized_json, n=n_scenes)
+    if settings().test_mode:
+        log.info("  [%s] TEST_MODE: %d scenes (instead of 14)", job_id, n_scenes)
     cached_pngs = _existing_pngs(job_id, len(scenes))
     if cached_pngs:
         log.info("  [%s] reusing %d cached images", job_id, len(cached_pngs))
@@ -153,7 +161,10 @@ async def _handle_generate_video(task: Task) -> None:
         async with session_factory()() as s:
             await _set_stage(s, job_id, 4, message="generating images")
         images = await pipeline.generate_images(
-            scenes, job.image_concept_slug, job_id=job_id
+            scenes,
+            job.image_concept_slug,
+            job_id=job_id,
+            conceptized=job.conceptized_json,
         )
 
     # ── Stage 5: Clipping (이미 14개 mp4 있으면 재사용) ────────────
@@ -180,7 +191,7 @@ async def _handle_generate_video(task: Task) -> None:
             await _set_stage(s, job_id, 6, message="generating narration")
         narration = await pipeline.generate_narration(
             text=narration_text,
-            voice="ko_learning",
+            voice=settings().tts_voice,
             speed=1.0,
             job_id=job_id,
         )

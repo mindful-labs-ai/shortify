@@ -15,7 +15,12 @@ class Pipeline(Protocol):
     async def conceptize(self, text: str, lang: str = "en") -> dict: ...
     def split_scenes(self, conceptized: dict, n: int = 14) -> list[dict]: ...
     async def generate_images(
-        self, scenes: list[dict], concept_slug: str, *, job_id: str
+        self,
+        scenes: list[dict],
+        concept_slug: str,
+        *,
+        job_id: str,
+        conceptized: dict | None = None,
     ) -> list[Path]: ...
     async def generate_clips(
         self, images: list[Path], motion: str, *, job_id: str

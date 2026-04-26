@@ -12,6 +12,19 @@ export default function ConfigPanel({ config }: { config: AdminConfig }) {
           <span className="text-neutral-400">workers:</span> {config.n_workers}
         </div>
         <div>
+          <span className="text-neutral-400">scenes/job:</span>{" "}
+          <span
+            className={config.test_mode ? "font-medium text-amber-700" : ""}
+          >
+            {config.scene_count}
+            {config.test_mode ? " (TEST)" : ""}
+          </span>
+        </div>
+        <div>
+          <span className="text-neutral-400">clip duration:</span>{" "}
+          {config.video_duration_sec}s
+        </div>
+        <div>
           <span className="text-neutral-400">gemini key:</span>{" "}
           <span className={config.gemini_key_set ? "text-emerald-700" : "text-rose-700"}>
             {config.gemini_key_set ? "set ✓" : "MISSING"}

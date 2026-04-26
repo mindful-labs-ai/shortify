@@ -41,16 +41,46 @@ class Settings:
 
     n_workers: int = int(os.environ.get("SHORTIFY_WORKERS", "2"))
 
-    # Gemini model IDs (변경 결정 사항)
-    model_text: str = "gemini-3.1-flash-lite-preview"
-    model_image: str = "gemini-3.1-flash-image-preview"
-    model_video: str = "veo-3.1-generate-preview"
-    model_tts: str = "gemini-3.1-flash-tts-preview"
-    model_audio: str = "gemini-3.1-flash-preview"
+    # Gemini model IDs. v1beta 의 정확한 ID 가 키 권한에 따라 달라지므로 env 우선.
+    # 어떤 ID 가 활성인지는 ``GET /admin/gemini/models`` 로 확인 가능.
+    # ID 는 SDK 가 받아들이는 정식 형태인 'models/<name>' 으로 통일.
+    model_text: str = os.environ.get(
+        "SHORTIFY_MODEL_TEXT", "models/gemini-3.1-flash-lite-preview"
+    )
+    model_image: str = os.environ.get(
+        "SHORTIFY_MODEL_IMAGE", "models/gemini-3.1-flash-image-preview"
+    )
+    model_video: str = os.environ.get(
+        "SHORTIFY_MODEL_VIDEO", "models/veo-3.1-fast-generate-preview"
+    )
+    model_tts: str = os.environ.get(
+        "SHORTIFY_MODEL_TTS", "models/gemini-3.1-flash-tts-preview"
+    )
+    model_audio: str = os.environ.get(
+        "SHORTIFY_MODEL_AUDIO", "models/gemini-3.1-flash-lite-preview"
+    )
 
     # Veo I2V duration. 모델별 허용 범위 다름 (현 Veo 3.x 류는 4~8 inclusive).
     # 환경변수로 조정 가능: SHORTIFY_VIDEO_DURATION_SEC.
     video_duration_sec: int = int(os.environ.get("SHORTIFY_VIDEO_DURATION_SEC", "6"))
+
+    # Gemini TTS prebuilt voice 이름. 미지정 시 모델 기본 사용.
+    # 사용 가능한 prebuilt: Aoede, Charon, Fenrir, Kore, Puck, ... (SDK 문서 참고)
+    tts_voice: str = os.environ.get("SHORTIFY_TTS_VOICE", "Kore")
+
+    # 테스트 모드 — Imagen / Veo 호출량을 줄여 dev 사이클을 빠르게.
+    #   SHORTIFY_TEST_MODE=1   → test scene count 활성화
+    #   SHORTIFY_TEST_SCENE_COUNT=N (기본 2)
+    # prod 기본은 14 (scene_splitter 의 default n).
+    test_mode: bool = os.environ.get("SHORTIFY_TEST_MODE") == "1"
+    test_scene_count: int = max(
+        1, int(os.environ.get("SHORTIFY_TEST_SCENE_COUNT", "2"))
+    )
+
+    @property
+    def scene_count(self) -> int:
+        """현재 모드에 맞는 scene 갯수 (test 면 축소, 아니면 14)."""
+        return self.test_scene_count if self.test_mode else 14
 
 
 @lru_cache(maxsize=1)
