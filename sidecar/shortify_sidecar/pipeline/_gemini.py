@@ -300,12 +300,31 @@ async def i2v(
                     ) from e
                 # 지수 백오프 — 추가 대기
                 _t.sleep(min(30, 2 ** consecutive_err))
-        gen_videos = (
-            getattr(getattr(op, "response", None), "generated_videos", None) or []
-        )
+        # operation 자체가 실패로 끝났는지 먼저 확인 — done=True 라도 error 가 채워질 수 있음
+        op_err = getattr(op, "error", None)
+        if op_err:
+            raise RuntimeError(f"Veo operation error: {op_err}")
+        # SDK 버전에 따라 response 또는 result 에 본문이 옴
+        resp = getattr(op, "response", None) or getattr(op, "result", None)
+        if resp is None:
+            raise RuntimeError("Veo: operation done but no response/result body")
+        # RAI 필터로 모두 걸러지면 generated_videos 가 비어있음 — 이유 노출
+        rai_count = getattr(resp, "rai_media_filtered_count", None) or 0
+        rai_reasons = getattr(resp, "rai_media_filtered_reasons", None) or []
+        gen_videos = getattr(resp, "generated_videos", None) or []
         if not gen_videos:
-            raise RuntimeError("Veo: empty generated_videos in operation response")
+            if rai_count or rai_reasons:
+                raise RuntimeError(
+                    f"Veo: all {rai_count or '?'} candidate(s) filtered by RAI: "
+                    f"{rai_reasons}"
+                )
+            raise RuntimeError(
+                f"Veo: empty generated_videos (resp keys: "
+                f"{list(getattr(resp, 'model_dump', dict)(exclude_none=True).keys())})"
+            )
         v = gen_videos[0].video
+        if v is None:
+            raise RuntimeError("Veo: first generated_video has no .video field")
         # 1) inline bytes 가 이미 있으면 그대로 저장
         vb = getattr(v, "video_bytes", None)
         if vb:
