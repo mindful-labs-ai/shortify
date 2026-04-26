@@ -37,33 +37,39 @@
       "type": "file"
     },
     {
-      "path": "wiki/prd/IDEA.md",
-      "accessCount": 15,
-      "lastAccessed": 1777168622312,
+      "path": "wiki/design/character/01-bible.md",
+      "accessCount": 12,
+      "lastAccessed": 1777181859505,
       "type": "file"
     },
     {
-      "path": "wiki/members.md",
+      "path": "wiki/design/README.md",
+      "accessCount": 12,
+      "lastAccessed": 1777181912956,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/05-next-steps.md",
+      "accessCount": 11,
+      "lastAccessed": 1777181925300,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/02-logo.md",
+      "accessCount": 10,
+      "lastAccessed": 1777177094064,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/character/02-usage.md",
       "accessCount": 8,
-      "lastAccessed": 1777168102933,
+      "lastAccessed": 1777177095997,
       "type": "file"
     },
     {
-      "path": "wiki/prd/architecture/04-data-model.md",
-      "accessCount": 5,
-      "lastAccessed": 1777168692355,
-      "type": "file"
-    },
-    {
-      "path": "wiki/prd/architecture/08-security.md",
-      "accessCount": 4,
-      "lastAccessed": 1777168620223,
-      "type": "file"
-    },
-    {
-      "path": "index.html",
-      "accessCount": 3,
-      "lastAccessed": 1777167712636,
+      "path": "wiki/design/brand/03-color.md",
+      "accessCount": 8,
+      "lastAccessed": 1777181865613,
       "type": "file"
     },
     {
@@ -79,9 +85,9 @@
       "type": "file"
     },
     {
-      "path": "src/pages/DropView.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1777167716258,
+      "path": "design/character/README.md",
+      "accessCount": 5,
+      "lastAccessed": 1777181901358,
       "type": "file"
     },
     {
@@ -97,21 +103,15 @@
       "type": "file"
     },
     {
-      "path": "src/lib/api.ts",
-      "accessCount": 2,
-      "lastAccessed": 1777168631205,
+      "path": "wiki/design/brand/01-identity.md",
+      "accessCount": 4,
+      "lastAccessed": 1777177093747,
       "type": "file"
     },
     {
-      "path": "wiki/prd/plan.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534061,
-      "type": "file"
-    },
-    {
-      "path": "wiki/prd/architecture/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777164534214,
+      "path": "wiki/design/brand/04-typography.md",
+      "accessCount": 4,
+      "lastAccessed": 1777177095284,
       "type": "file"
     },
     {
@@ -273,13 +273,19 @@
     {
       "path": "wiki/PHASE0.md",
       "accessCount": 1,
-      "lastAccessed": 1777166466735,
+      "lastAccessed": 1777176346594,
+      "type": "directory"
+    },
+    {
+      "path": "wiki/design/character/03-cast.md",
+      "accessCount": 1,
+      "lastAccessed": 1777181840125,
       "type": "file"
     },
     {
-      "path": "eslint.config.js",
+      "path": "design/character/cast/README.md",
       "accessCount": 1,
-      "lastAccessed": 1777168069155,
+      "lastAccessed": 1777181879291,
       "type": "file"
     }
   ],

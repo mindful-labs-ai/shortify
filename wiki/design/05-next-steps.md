@@ -6,7 +6,7 @@
 
 ---
 
-## 우선순위 1 — 마스코트 / 코어 시각
+## 우선순위 1 — 마스코트 / 캐스트 / 코어 시각
 
 - [x] **마스코트 베리에이션 시트** — 쇼리의 표정 8종 + 포즈 4종 + 4-view turnaround + IN USE 5 시나리오. 정본: [`/design/character/final/sheet/character_mascot_sheet_v1_final.png`](../../design/character/final/sheet/character_mascot_sheet_v1_final.png). (2026-04-26 완료, 캐릭터 시트 v1)
 - [x] **마스코트 Dark Brown HEX 확정** — `#3A2A23` 으로 확정 → [03-color §1](./brand/03-color.md#1-코어-팔레트) `mascot-point` 토큰 등록 완료.
@@ -16,6 +16,11 @@
 - [x] **로고 워드마크 v1 (PNG)** — [`/design/brand/logo/wordmark/brand_logo_wordmark_v1_final.png`](../../design/brand/logo/wordmark/brand_logo_wordmark_v1_final.png) 등록 완료 (2026-04-26).
 - [ ] **로고 SVG 원본 + 추가 변형** — 워드마크 SVG, Mascot Symbol-only SVG, Wordmark+Mascot Lockup, Monochrome (Ink/Cream) 변형. [02-logo §2](./brand/02-logo.md#2-로고-변형-lockups).
 - [ ] **macOS 앱 아이콘 1024×1024 export** — `.icns` 빌드용 사이즈 풀 셋 (16/32/64/128/256/512/1024 + Retina). 32px 이하 별도 마스터(블러쉬 생략·눈 키움) 필요.
+- [x] **5인 캐스트 정면 포트레이트 v1** — Pip / Iris / Jay / Vera / Sage 1컷씩 [`/design/character/cast/<id>/cast_<id>_portrait_v1.png`](../../design/character/cast/) 등록 (2026-04-26). 명세: [character/03-cast](./character/03-cast.md).
+- [ ] **캐스트 표정 시트** — 캐릭터당 8종 (`기쁨 / 놀람 / 끄덕임 / 의문 / 미소 / 진지 / 박수 / 잠깐만`).
+- [ ] **캐스트 포즈 시트** — 캐릭터당 5종 (`정면 / 측면 / 가리킴 / 손 흔들기 / 박수`).
+- [ ] **캐스트 TTS 보이스 매칭** — 5인 음성 라이브러리 후보 결정 (성별 / 연령대 / 속도 / 피치).
+- [ ] **`cast-lavender` / `cast-warm-gray` 보조 셰이드** — `50` / `900` 정의, 다크모드 변형.
 
 ## 우선순위 2 — 화면 / 토큰
 
@@ -50,6 +55,7 @@
 
 | 날짜 | 작성자 | 변경 |
 |------|--------|------|
+| 2026-04-26 | 김성곤 | Character Cast v1.1 반영 — 5인 정면 포트레이트 v1 도착 (Pip/Iris/Jay/Vera/Sage), 03-cast 신설, 표정·포즈·TTS 후속 작업 등록 |
 | 2026-04-26 | 김성곤 | 4-step 워크플로우 정본 HTML/JSX + 스크린샷 등록 — 메인 화면 목업 항목 완료(잔여 화면 분리), 02-tokens/03-components 정본 동기화, 04-screens 신설 |
 | 2026-04-26 | 김성곤 | Logo v1 워드마크 PNG 등록 — 로고 워드마크 원본 항목 PNG 부분 완료, SVG는 후속 작업으로 분리 |
 | 2026-04-26 | 김성곤 | Character Sheet v1 도착 — 마스코트 베리에이션 시트 / Dark Brown HEX / 앱 아이콘 방향 항목 완료 처리 |
