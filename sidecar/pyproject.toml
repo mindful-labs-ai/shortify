@@ -8,18 +8,23 @@ dependencies = [
   "uvicorn[standard]>=0.30",
   "pydantic>=2.8",
   "sqlmodel>=0.0.22",
+  "alembic>=1.13",                 # 마이그레이션 (런타임에 schema upgrade 적용)
+  "aiosqlite>=0.20",               # async SQLite 드라이버 (v0 기본)
+  "greenlet>=3.0",                 # SQLAlchemy async 필수 (arm64 wheel 자동 설치 안 됨)
   "pypdf>=5.0",
   "pdfplumber>=0.11",
   "ffmpeg-python>=0.2",
-  "faster-whisper>=1.0",
   "google-genai>=0.3",
   "httpx>=0.27",
   "python-multipart>=0.0.9",
+  "python-dotenv>=1.0",            # 사이드카 부팅 시 .env 자동 로드
   "sse-starlette>=2.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+# Postgres 이전 시 활성화: pip install -e ".[pg]"
+pg  = ["asyncpg>=0.30"]
 
 [build-system]
 requires = ["setuptools>=68"]

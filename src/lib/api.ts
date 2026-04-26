@@ -60,7 +60,7 @@ export const api = {
       body: JSON.stringify({ pdf_id: pdfId, sections }),
     }),
 
-  listJobs: () => request<Job[]>("/jobs"),
+  listJobs: () => request<{ jobs: Job[] }>("/jobs"),
   getJob: (id: string) => request<Job>(`/jobs/${id}`),
 
   selectImage: (id: string, slug: string) =>
@@ -72,10 +72,22 @@ export const api = {
 
   retryJob: (id: string) => request<Job>(`/jobs/${id}/retry`, { method: "POST" }),
 
+  // Soft delete: 휴지통 이동, 파일 보존. 기본 listJobs 응답에서 제외됨.
   deleteJob: (id: string) =>
     request<{ ok: true }>(`/jobs/${id}`, { method: "DELETE" }),
 
-  imageConcepts: () => request<ImageConcept[]>("/image-concepts"),
+  // 휴지통에서 복원 (deleted_at = NULL).
+  restoreJob: (id: string) =>
+    request<Job>(`/jobs/${id}/restore`, { method: "POST" }),
+
+  // 휴지통 비우기 — 비가역 hard delete + 파일 회수.
+  emptyTrash: () =>
+    request<{ purged_jobs: number; purged_pdfs: number; freed_bytes: number }>(
+      "/trash",
+      { method: "DELETE" },
+    ),
+
+  imageConcepts: () => request<{ concepts: ImageConcept[] }>("/image-concepts"),
 
   // SSE는 sse.ts 사용 (EventSource는 헤더 못 붙이므로 토큰을 쿼리로)
   jobStreamUrl: (id: string) => {

@@ -38,14 +38,26 @@
     },
     {
       "path": "wiki/prd/IDEA.md",
-      "accessCount": 14,
-      "lastAccessed": 1777167793894,
+      "accessCount": 15,
+      "lastAccessed": 1777168622312,
       "type": "file"
     },
     {
       "path": "wiki/members.md",
       "accessCount": 8,
       "lastAccessed": 1777168102933,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/04-data-model.md",
+      "accessCount": 5,
+      "lastAccessed": 1777168692355,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/08-security.md",
+      "accessCount": 4,
+      "lastAccessed": 1777168620223,
       "type": "file"
     },
     {
@@ -61,15 +73,33 @@
       "type": "file"
     },
     {
-      "path": "wiki/prd/architecture/08-security.md",
+      "path": "sidecar/pyproject.toml",
       "accessCount": 3,
-      "lastAccessed": 1777167740776,
+      "lastAccessed": 1777168661191,
       "type": "file"
     },
     {
       "path": "src/pages/DropView.tsx",
       "accessCount": 2,
       "lastAccessed": 1777167716258,
+      "type": "file"
+    },
+    {
+      "path": "wiki/prd/architecture/05-api-spec.md",
+      "accessCount": 2,
+      "lastAccessed": 1777168616002,
+      "type": "file"
+    },
+    {
+      "path": "sidecar/shortify_sidecar/api/jobs.py",
+      "accessCount": 2,
+      "lastAccessed": 1777168627341,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/api.ts",
+      "accessCount": 2,
+      "lastAccessed": 1777168631205,
       "type": "file"
     },
     {
@@ -151,12 +181,6 @@
       "type": "file"
     },
     {
-      "path": "src/lib/api.ts",
-      "accessCount": 1,
-      "lastAccessed": 1777166319427,
-      "type": "file"
-    },
-    {
       "path": "src/lib/sse.ts",
       "accessCount": 1,
       "lastAccessed": 1777166322245,
@@ -199,12 +223,6 @@
       "type": "file"
     },
     {
-      "path": "sidecar/pyproject.toml",
-      "accessCount": 1,
-      "lastAccessed": 1777166360245,
-      "type": "file"
-    },
-    {
       "path": "sidecar/shortify_sidecar/__init__.py",
       "accessCount": 1,
       "lastAccessed": 1777166360977,
@@ -238,12 +256,6 @@
       "path": "sidecar/shortify_sidecar/api/toc.py",
       "accessCount": 1,
       "lastAccessed": 1777166375506,
-      "type": "file"
-    },
-    {
-      "path": "sidecar/shortify_sidecar/api/jobs.py",
-      "accessCount": 1,
-      "lastAccessed": 1777166382048,
       "type": "file"
     },
     {

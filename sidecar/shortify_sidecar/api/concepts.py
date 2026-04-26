@@ -1,12 +1,33 @@
-from fastapi import APIRouter, HTTPException, status
+"""GET /image-concepts — 활성 컨셉 5종."""
+from __future__ import annotations
+
+from fastapi import APIRouter
+from sqlalchemy import select
+
+from ..db.models import ImageConcept
+from ..db.session import session_factory
 
 router = APIRouter()
 
 
 @router.get("/image-concepts")
-def list_image_concepts() -> list[dict]:
-    """5종 비주얼 컨셉 카드. Phase 0 stub.
-
-    실 구현 시 assets/image_concepts/<slug>/ 시드 + DB image_concepts 테이블 조회.
-    """
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, "concepts not yet implemented")
+async def list_concepts() -> dict:
+    async with session_factory()() as s:
+        rows = (
+            await s.execute(
+                select(ImageConcept)
+                .where(ImageConcept.active.is_(True))
+                .order_by(ImageConcept.sort_order)
+            )
+        ).scalars().all()
+    return {
+        "concepts": [
+            {
+                "slug": r.slug,
+                "name": r.name,
+                "description": r.description,
+                "preview_url": f"file://{r.preview_path}",
+            }
+            for r in rows
+        ]
+    }

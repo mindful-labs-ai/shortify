@@ -128,9 +128,10 @@ def safe_log(msg: str, **kwargs):
 
 ## 사용자 제어
 
-- 설정에서 "API 키 삭제" 버튼 (Keychain 항목 삭제)
-- 설정에서 "모든 데이터 삭제" 버튼 (`~/Library/.../Shortify` 전체 제거)
-- 영상 1편 단위 삭제 가능
+- 설정에서 "API 키 삭제" 버튼 (Keychain 항목 hard delete — 시크릿이라 soft delete 의미 없음)
+- 설정에서 "모든 데이터 삭제" 버튼 (활성 pdfs/jobs를 일괄 soft delete + Keychain 키 hard delete)
+- 영상 1편 단위 soft delete 가능 (휴지통에서 복원·완전 삭제 가능)
+- "휴지통 비우기"로 명시적 hard purge — 그 전까지 디스크 데이터 보존
 
 ## 알려진 한계 (v0)
 

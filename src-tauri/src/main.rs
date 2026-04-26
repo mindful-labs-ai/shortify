@@ -1,32 +1,73 @@
-// Phase 0 minimal entry. 사이드카 lifecycle / Keychain / Sparkle 은
-// 박경선(@gngsn) sunny 브랜치에서 단계적으로 추가.
-
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use serde::Serialize;
+mod keychain;
+mod sidecar;
 
-#[derive(Serialize)]
-struct ApiConfig {
-    #[serde(rename = "baseUrl")]
-    base_url: String,
-    token: String,
+use sidecar::{ApiConfig, SidecarHandle, SidecarStatus};
+use tauri::{Manager, State};
+
+#[tauri::command]
+fn get_api_config(handle: State<SidecarHandle>) -> Result<ApiConfig, String> {
+    handle
+        .config
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or_else(|| "sidecar not started".into())
 }
 
 #[tauri::command]
-fn get_api_config() -> ApiConfig {
-    // dev 기본값. prod 에서는 사이드카 spawn 시 발급된 값으로 대체.
-    let port = std::env::var("SHORTIFY_PORT").unwrap_or_else(|_| "51234".into());
-    let host = std::env::var("SHORTIFY_HOST").unwrap_or_else(|_| "127.0.0.1".into());
-    let token = std::env::var("SHORTIFY_TOKEN").unwrap_or_else(|_| "dev".into());
-    ApiConfig {
-        base_url: format!("http://{host}:{port}"),
-        token,
-    }
+fn sidecar_status(handle: State<SidecarHandle>) -> SidecarStatus {
+    sidecar::status(&handle)
+}
+
+#[tauri::command]
+fn sidecar_restart(handle: State<SidecarHandle>) -> Result<ApiConfig, String> {
+    sidecar::kill(&handle);
+    sidecar::spawn(&handle)
+}
+
+#[tauri::command]
+fn keychain_set(service: String, key: String, value: String) -> Result<(), String> {
+    keychain::set(&service, &key, &value)
+}
+
+#[tauri::command]
+fn keychain_get(service: String, key: String) -> Result<Option<String>, String> {
+    keychain::get(&service, &key)
+}
+
+#[tauri::command]
+fn keychain_delete(service: String, key: String) -> Result<(), String> {
+    keychain::remove(&service, &key)
 }
 
 fn main() {
+    let handle = SidecarHandle::default();
+
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_api_config])
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .manage(handle)
+        .setup(|app| {
+            let state: State<SidecarHandle> = app.state();
+            sidecar::spawn(&state).map_err(|e| Box::<dyn std::error::Error>::from(e))?;
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                let state: State<SidecarHandle> = window.state();
+                sidecar::kill(&state);
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            get_api_config,
+            sidecar_status,
+            sidecar_restart,
+            keychain_set,
+            keychain_get,
+            keychain_delete,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
