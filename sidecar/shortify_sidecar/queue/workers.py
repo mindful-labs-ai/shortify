@@ -47,6 +47,10 @@ async def _set_stage(
         values["stage_message"] = message
     if error is not None:
         values["error"] = error
+    elif stage >= 0:
+        # 정상 진행 stage (>=0) 로 들어가면 이전 실패 잔재 error 를 비운다.
+        # stage=-1 진입 시에는 호출자가 error 를 채워서 보내므로 영향 없음.
+        values["error"] = None
     if output_video_path is not None:
         values["output_video_path"] = output_video_path
     if duration_ms is not None:
