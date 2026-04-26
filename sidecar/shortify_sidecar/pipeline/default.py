@@ -64,7 +64,8 @@ class DefaultPipeline:
     async def generate_narration(
         self, text: str, voice: str, speed: float, *, job_id: str
     ) -> Path:
-        out = output_dir(job_id) / "narration.mp3"
+        # Gemini native audio 는 raw PCM → _gemini.tts 가 WAV 헤더를 prepend.
+        out = output_dir(job_id) / "narration.wav"
         return await narration_gen.tts(text, voice=voice, speed=speed, out_path=out)
 
     async def align_words(self, audio: Path, text: str) -> list[dict]:

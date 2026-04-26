@@ -47,6 +47,37 @@ def client():
     return genai.Client(api_key=key)
 
 
+async def list_models() -> list[dict]:
+    """현재 API 키로 보이는 모델 + 지원 메소드. 진단용.
+
+    google-genai SDK 응답 객체는 버전마다 흔들려서 가능한 필드만 방어적으로 추출.
+    """
+
+    def _call() -> list[dict]:
+        c = client()
+        out: list[dict] = []
+        for m in c.models.list():
+            out.append(
+                {
+                    "name": getattr(m, "name", None),
+                    "display_name": getattr(m, "display_name", None),
+                    "version": getattr(m, "version", None),
+                    "description": getattr(m, "description", None),
+                    "input_token_limit": getattr(m, "input_token_limit", None),
+                    "output_token_limit": getattr(m, "output_token_limit", None),
+                    "supported_actions": list(
+                        getattr(m, "supported_actions", None) or []
+                    ),
+                    "supported_generation_methods": list(
+                        getattr(m, "supported_generation_methods", None) or []
+                    ),
+                }
+            )
+        return out
+
+    return await asyncio.to_thread(_call)
+
+
 async def text_json(prompt: str, *, system: str | None = None) -> dict:
     """텍스트 → JSON 응답. 실패 시 RuntimeError."""
     import json as _json
@@ -485,8 +516,73 @@ async def i2v(
     return out_path
 
 
+def _wrap_pcm_to_wav(
+    pcm: bytes, *, rate: int = 24000, channels: int = 1, bits: int = 16
+) -> bytes:
+    """raw PCM → RIFF/WAVE 헤더 포함 self-describing WAV."""
+    import struct
+
+    byte_rate = rate * channels * bits // 8
+    block_align = channels * bits // 8
+    return (
+        b"RIFF"
+        + struct.pack("<I", 36 + len(pcm))
+        + b"WAVE"
+        + b"fmt "
+        + struct.pack(
+            "<IHHIIHH", 16, 1, channels, rate, byte_rate, block_align, bits
+        )
+        + b"data"
+        + struct.pack("<I", len(pcm))
+        + pcm
+    )
+
+
+def _maybe_wrap_audio(data: bytes, mime: str | None) -> bytes:
+    """Gemini TTS 응답이 raw PCM 이면 WAV 로 감싸 self-contained 로 만든다.
+
+    이미 RIFF (WAV) / ID3 (MP3) / OggS / fLaC 헤더가 있으면 그대로 통과.
+    """
+    if not data:
+        return data
+    head = data[:4]
+    if head in (b"RIFF", b"OggS", b"fLaC") or data[:3] == b"ID3":
+        return data
+    m = (mime or "").lower()
+    is_pcm = (
+        m.startswith("audio/l16")
+        or m.startswith("audio/pcm")
+        or "linear16" in m
+        # mime 비어 있고 헤더도 없으면 PCM 으로 가정 (Gemini native audio 의 default)
+        or m == ""
+    )
+    if not is_pcm:
+        return data
+    rate = 24000
+    channels = 1
+    for kv in m.split(";")[1:]:
+        k, _, v = kv.strip().partition("=")
+        v = v.strip()
+        if k == "rate":
+            try:
+                rate = int(v)
+            except ValueError:
+                pass
+        elif k == "channels":
+            try:
+                channels = int(v)
+            except ValueError:
+                pass
+    return _wrap_pcm_to_wav(data, rate=rate, channels=channels)
+
+
 async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
-    """gemini TTS native audio → MP3."""
+    """gemini TTS native audio → WAV (self-describing).
+
+    Gemini native audio 모델은 raw 16-bit PCM (보통 24kHz mono) 을 inline_data 로
+    돌려준다. 헤더가 없는 그 바이트를 그대로 ``.mp3`` 로 저장하면 ffmpeg/Gemini
+    재업로드 모두 'header missing' 으로 디코드 실패. 그래서 mime 검사 후 PCM 이면
+    WAV 헤더를 prepend 한다."""
 
     def _call():
         c = client()
@@ -522,8 +618,11 @@ async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
         for part in parts:
             inline = getattr(part, "inline_data", None)
             if inline and getattr(inline, "data", None):
-                out_path.write_bytes(inline.data)
-                return len(inline.data)
+                wrapped = _maybe_wrap_audio(
+                    inline.data, getattr(inline, "mime_type", None)
+                )
+                out_path.write_bytes(wrapped)
+                return len(wrapped)
         raise RuntimeError(
             f"Gemini TTS: no inline_data in response (model={settings().model_tts})"
         )
@@ -570,7 +669,7 @@ async def align_words_audio(audio_path: Path, text_in: str) -> list[dict]:
             contents=[
                 prompt,
                 gtypes.Part.from_bytes(
-                    data=audio_path.read_bytes(), mime_type="audio/mpeg"
+                    data=audio_path.read_bytes(), mime_type="audio/wav"
                 ),
             ],
             config={"response_mime_type": "application/json"},

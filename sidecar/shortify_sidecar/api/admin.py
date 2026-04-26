@@ -15,6 +15,7 @@ from sqlalchemy import desc, func, select
 from ..db.models import AiTrace, Job, JobEvent, Pdf, Prompt, QueueTask
 from ..db.seed import PROMPT_SEED
 from ..db.session import session_factory
+from ..pipeline import _gemini
 from ..settings import settings
 
 router = APIRouter(prefix="/admin")
@@ -297,6 +298,47 @@ async def admin_state(
             for j in jobs
         ],
         "traces": [_ser_trace(t) for t in traces],
+    }
+
+
+# ─────────────────────────── gemini models ───────────────────────────
+
+
+@router.get("/gemini/models")
+async def admin_list_gemini_models() -> dict:
+    """현재 API 키로 보이는 Gemini 모델 목록 + sidecar 가 사용 중인 ID 매칭.
+
+    settings 에 박힌 ID 가 실제 사용 가능한지 진단 + 갈아끼울 후보 식별.
+    """
+    s = settings()
+    configured = {
+        "text": s.model_text,
+        "image": s.model_image,
+        "video": s.model_video,
+        "tts": s.model_tts,
+        "audio": s.model_audio,
+    }
+    try:
+        models = await _gemini.list_models()
+        err = None
+    except Exception as e:  # noqa: BLE001
+        models = []
+        err = str(e)
+
+    available_names = {
+        (m.get("name") or "").removeprefix("models/") for m in models
+    }
+    matched = {
+        slot: (cfg, cfg in available_names)
+        for slot, cfg in configured.items()
+    }
+    return {
+        "configured": configured,
+        "matched": {
+            slot: {"id": cfg, "available": ok} for slot, (cfg, ok) in matched.items()
+        },
+        "models": models,
+        "error": err,
     }
 
 

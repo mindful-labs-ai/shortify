@@ -195,30 +195,30 @@ async def seed_image_concepts(session: AsyncSession) -> int:
     assets_root = _project_root() / "assets" / "image_concepts"
     seed_slugs = {s["slug"] for s in SEED}
 
-    # 사용자 결정: ref 경로는 S3 public read URL 로 저장.
-    # 기본 base 는 region-specific (ap-northeast-2) — 일반 endpoint 는 307
-    # redirect 가 와서 한 hop 더 듦. _safe_refs() 의 urllib 는 redirect 도
-    # 자동으로 따라가므로 둘 다 동작하지만 region 명시가 빠름.
-    # SHORTIFY_ASSETS_BASE_URL 로 다른 bucket / 다른 host 로 변경 가능.
+    # 기본은 로컬 자산 (외부 네트워크로 ref 가 안 나가게). 외부 호스트
+    # (S3 / GitHub raw) 로 바꾸려면 SHORTIFY_ASSETS_BASE_URL 명시.
+    #   비활성/없음                 → 로컬 절대경로 ('/abs/.../ref_main.png')
+    #   'https://...' 로 시작        → 그 base + '/image_concepts/<slug>/<file>'
+    # _safe_refs() 가 양쪽 모두 처리.
     import os as _os
 
-    base_url = _os.environ.get(
-        "SHORTIFY_ASSETS_BASE_URL",
-        "https://hackathon-shortify.s3.ap-northeast-2.amazonaws.com",
-    ).rstrip("/")
+    base_url = (_os.environ.get("SHORTIFY_ASSETS_BASE_URL") or "").strip().rstrip("/")
+    use_remote = bool(base_url)
 
     for s in SEED:
         slug_dir = assets_root / s["slug"]
         preview = slug_dir / "preview.png"
-        # 로컬 ref_*.png 파일 이름만 가져와 base_url 기반 URL 로 변환.
-        # 자산은 외부 (S3 / GitHub raw) 에 있고 로컬 파일은 시드 시점의 이름
-        # 결정 용으로만 사용된다. 만약 로컬에 ref_*.png 가 없으면 fallback 으로
-        # ref_main.png 만 가정해서 single ref 라도 보낸다 (디자이너가 자산만
-        # 올리고 코드 sync 가 늦어질 때 대응).
+        # 로컬 ref_*.png 가 있으면 그 이름들을, 없으면 ref_main.png 한 장 가정.
+        # (디자이너가 자산만 올리고 코드 sync 가 늦어질 때를 위한 fallback.)
         ref_names = sorted(p.name for p in slug_dir.glob("ref_*.png"))
         if not ref_names:
             ref_names = ["ref_main.png"]
-        refs = [f"{base_url}/image_concepts/{s['slug']}/{n}" for n in ref_names]
+        if use_remote:
+            refs = [
+                f"{base_url}/image_concepts/{s['slug']}/{n}" for n in ref_names
+            ]
+        else:
+            refs = [str(slug_dir / n) for n in ref_names]
 
         if s["slug"] in existing_slugs:
             # UPDATE — JSON 컬럼은 SQLAlchemy 가 list 를 직접 직렬화한다.
