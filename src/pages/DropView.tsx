@@ -1019,6 +1019,8 @@ function EmptyHint() {
 export default function DropView() {
   const setPdf = useAppStore((s) => s.setPdf);
   const setView = useAppStore((s) => s.setView);
+  const forceStart = useAppStore((s) => s.forceStart);
+  const setForceStart = useAppStore((s) => s.setForceStart);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [hover, setHover] = useState(false);
@@ -1027,8 +1029,13 @@ export default function DropView() {
   const [recents, setRecents] = useState<PdfSummary[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
 
-  // "filled" once recents or jobs exist
-  const hasFilled = recents.length > 0 || allJobs.length > 0;
+  // "filled" once recents or jobs exist — but suppressed when the user
+  // explicitly clicked the brand logo to start fresh.
+  const hasFilled = !forceStart && (recents.length > 0 || allJobs.length > 0);
+
+  // Clear the freshly-started flag when leaving the drop view so the next
+  // visit re-uses the data-aware compact layout.
+  useEffect(() => () => setForceStart(false), [setForceStart]);
 
   const refreshData = useCallback(async () => {
     try {

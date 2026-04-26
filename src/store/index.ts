@@ -13,6 +13,12 @@ type AppState = {
   view: View;
   setView: (v: View) => void;
 
+  // Set true when the brand logo is clicked so DropView renders its full
+  // "Start a new project" hero instead of the compact data-aware variant.
+  // Cleared on DropView unmount.
+  forceStart: boolean;
+  setForceStart: (v: boolean) => void;
+
   pdf: Pdf | null;
   setPdf: (p: Pdf | null) => void;
 
@@ -30,6 +36,9 @@ type AppState = {
 export const useAppStore = create<AppState>((set) => ({
   view: "drop",
   setView: (view) => set({ view }),
+
+  forceStart: false,
+  setForceStart: (forceStart) => set({ forceStart }),
 
   pdf: null,
   setPdf: (pdf) => set({ pdf }),

@@ -156,6 +156,12 @@ const NAV_ITEMS: Array<{
 export default function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
+  const setForceStart = useAppStore((s) => s.setForceStart);
+
+  const goHome = () => {
+    setForceStart(true);
+    setView("drop");
+  };
 
   return (
     <aside
@@ -173,9 +179,9 @@ export default function Sidebar() {
       <div
         role="button"
         tabIndex={0}
-        onClick={() => setView("drop")}
+        onClick={goHome}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setView("drop");
+          if (e.key === "Enter" || e.key === " ") goHome();
         }}
         style={{
           padding: "20px 22px 18px",

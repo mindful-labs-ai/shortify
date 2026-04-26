@@ -297,6 +297,7 @@ function ProgressDisplay({
 export default function JobProgressBoard() {
   const pendingIds = useAppStore((s) => s.pendingJobIds);
   const jobs = useAppStore((s) => s.jobs);
+  const setJobs = useAppStore((s) => s.setJobs);
   const upsertJob = useAppStore((s) => s.upsertJob);
   const setView = useAppStore((s) => s.setView);
 
@@ -306,20 +307,38 @@ export default function JobProgressBoard() {
     Record<string, { stage: number; pct: number }>
   >({});
 
+  // Always pull a fresh job list so the fallback (most-recent-job) works
+  // when the user opens this tab without a freshly-created batch.
+  useEffect(() => {
+    api.listJobs().then((r) => setJobs(r.jobs)).catch(() => undefined);
+  }, [setJobs]);
+
+  // pendingIds is the user's just-created batch; if absent (direct nav from
+  // the sidebar), fall back to the most recent in-progress job, then the
+  // most recent job overall. listJobs is ordered created_at desc, so the
+  // first match is the freshest.
+  const effectiveIds = useMemo(() => {
+    if (pendingIds.length > 0) return pendingIds;
+    const inProgress = jobs.filter((j) => j.stage !== 9 && j.stage !== -1);
+    if (inProgress.length > 0) return [inProgress[0].id];
+    if (jobs.length > 0) return [jobs[0].id];
+    return [];
+  }, [pendingIds, jobs]);
+
   // Initial fetch of job state.
   useEffect(() => {
     let cancelled = false;
-    Promise.all(pendingIds.map((id) => api.getJob(id))).then((rows) => {
+    Promise.all(effectiveIds.map((id) => api.getJob(id))).then((rows) => {
       if (!cancelled) rows.forEach(upsertJob);
     });
     return () => {
       cancelled = true;
     };
-  }, [pendingIds, upsertJob]);
+  }, [effectiveIds, upsertJob]);
 
   // SSE subscriptions — preserve progress_pct from events, refresh job state.
   useEffect(() => {
-    const unsubs = pendingIds.map((id) =>
+    const unsubs = effectiveIds.map((id) =>
       subscribeJob(
         api.jobStreamUrl(id),
         (e: JobEvent) => {
@@ -336,9 +355,9 @@ export default function JobProgressBoard() {
       ),
     );
     return () => unsubs.forEach((u) => u());
-  }, [pendingIds, upsertJob]);
+  }, [effectiveIds, upsertJob]);
 
-  const watchedJobs = jobs.filter((j) => pendingIds.includes(j.id));
+  const watchedJobs = jobs.filter((j) => effectiveIds.includes(j.id));
   const allDone = watchedJobs.length > 0 && watchedJobs.every((j) => j.stage === 9);
 
   // Aggregate global progress for display. Each job's progress is anchored to
