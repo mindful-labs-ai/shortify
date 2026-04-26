@@ -1,9 +1,122 @@
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { tauri } from "../lib/tauri";
+import Btn from "@/components/ui/Btn";
+import Shori from "@/components/brand/Shori";
 
 const SERVICE = "shortify";
 const KEY = "gemini";
+
+// ---------------------------------------------------------------------------
+// Style constants
+// ---------------------------------------------------------------------------
+const page: CSSProperties = {
+  maxWidth: 640,
+  margin: "0 auto",
+  padding: "40px 32px",
+};
+
+const heading1: CSSProperties = {
+  fontFamily: "var(--font-display)",
+  fontSize: 28,
+  fontWeight: 800,
+  color: "var(--ink)",
+  letterSpacing: -0.5,
+  marginBottom: 28,
+};
+
+const card: CSSProperties = {
+  background: "var(--paper)",
+  border: "1.5px solid var(--hairline-strong)",
+  borderRadius: "var(--radius-lg)",
+  padding: "24px 28px",
+  boxShadow: "var(--shadow-sm)",
+  marginBottom: 20,
+};
+
+const sectionLabel: CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: 0.9,
+  textTransform: "uppercase" as const,
+  color: "var(--ink-mute)",
+};
+
+const bodyText: CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  color: "var(--ink-soft)",
+  marginTop: 6,
+  lineHeight: 1.6,
+};
+
+const inputRow: CSSProperties = {
+  display: "flex",
+  gap: 10,
+  marginTop: 16,
+  alignItems: "stretch",
+};
+
+const inputStyle: CSSProperties = {
+  flex: 1,
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  color: "var(--ink)",
+  background: "var(--cream)",
+  border: "1.5px solid var(--hairline-strong)",
+  borderRadius: "var(--radius-md)",
+  padding: "9px 12px",
+  outline: "none",
+  transition: "border-color 120ms",
+};
+
+const removeBtn: CSSProperties = {
+  marginTop: 10,
+  fontFamily: "var(--font-sans)",
+  fontSize: 12,
+  color: "var(--ink-faint)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: 0,
+  textDecoration: "underline",
+  textUnderlineOffset: 3,
+};
+
+const dangerBtn: CSSProperties = {
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "var(--ink-soft)",
+  background: "var(--cream)",
+  border: "1.5px solid var(--hairline-strong)",
+  borderRadius: "var(--radius-md)",
+  padding: "9px 16px",
+  cursor: "pointer",
+  transition: "border-color 140ms, color 140ms",
+};
+
+const toastStyle: CSSProperties = {
+  marginTop: 20,
+  background: "var(--coral-50)",
+  border: "1.5px solid var(--coral-100)",
+  borderRadius: "var(--radius-md)",
+  padding: "12px 16px",
+  fontFamily: "var(--font-sans)",
+  fontSize: 13,
+  color: "var(--ink-soft)",
+};
+
+const shoriWrap: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 0,
+  marginBottom: 8,
+};
+
+// ---------------------------------------------------------------------------
 
 export default function SettingsPage() {
   const [keyValue, setKeyValue] = useState("");
@@ -67,55 +180,79 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold tracking-tight">Settings</h1>
+    <div style={page}>
+      {/* Shori greeting in header area */}
+      <div style={shoriWrap}>
+        <Shori pose="idle" size={88} />
+      </div>
 
-      <section className="mb-8 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-medium uppercase tracking-wider text-neutral-500">
-          Gemini API key
-        </h2>
-        <p className="mt-2 text-sm text-neutral-600">
+      <h1 style={heading1}>Settings</h1>
+
+      {/* ── API Key card ───────────────────────────────────────────── */}
+      <section style={card}>
+        <h2 style={sectionLabel}>Gemini API key</h2>
+        <p style={bodyText}>
           Stored in macOS Keychain. Used for all AI calls (Gemini text · Imagen · Veo · TTS · Audio).
         </p>
-        <div className="mt-4 flex gap-2">
+        <div style={inputRow}>
           <input
             type="password"
             value={keyValue}
             onChange={(e) => setKeyValue(e.target.value)}
             placeholder={hasKey ? "•••••••• (replace)" : "Paste your Gemini API key"}
-            className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-900"
+            style={inputStyle}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "var(--coral-500)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "var(--hairline-strong)";
+            }}
           />
-          <button
-            type="button"
+          <Btn
+            variant="primary"
+            size="md"
             onClick={save}
             disabled={busy || !keyValue.trim()}
-            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition disabled:opacity-40"
           >
             Save
-          </button>
+          </Btn>
         </div>
         {hasKey ? (
           <button
             type="button"
             onClick={remove}
             disabled={busy}
-            className="mt-3 text-xs text-neutral-500 underline-offset-2 hover:underline"
+            style={removeBtn}
           >
             Remove API key
           </button>
         ) : null}
       </section>
 
-      <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-medium uppercase tracking-wider text-neutral-500">
-          Data
-        </h2>
-        <div className="mt-4 flex flex-wrap gap-2">
+      {/* ── Data card ──────────────────────────────────────────────── */}
+      <section style={card}>
+        <h2 style={sectionLabel}>Data</h2>
+        <div
+          style={{
+            marginTop: 16,
+            display: "flex",
+            flexWrap: "wrap" as const,
+            gap: 10,
+          }}
+        >
           <button
             type="button"
             onClick={wipe}
             disabled={busy}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm transition hover:border-rose-400 hover:text-rose-600"
+            style={dangerBtn}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)";
+              e.currentTarget.style.color = "rgb(220,38,38)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--hairline-strong)";
+              e.currentTarget.style.color = "var(--ink-soft)";
+            }}
           >
             Move all data to Trash
           </button>
@@ -123,15 +260,24 @@ export default function SettingsPage() {
             type="button"
             onClick={emptyTrash}
             disabled={busy}
-            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm transition hover:border-rose-400 hover:text-rose-600"
+            style={dangerBtn}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(239,68,68,0.5)";
+              e.currentTarget.style.color = "rgb(220,38,38)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--hairline-strong)";
+              e.currentTarget.style.color = "var(--ink-soft)";
+            }}
           >
             Empty Trash (irreversible)
           </button>
         </div>
       </section>
 
+      {/* ── Status toast ───────────────────────────────────────────── */}
       {msg ? (
-        <p className="mt-6 rounded-lg bg-neutral-100 p-3 text-sm text-neutral-700">{msg}</p>
+        <p style={toastStyle}>{msg}</p>
       ) : null}
     </div>
   );

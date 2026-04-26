@@ -70,7 +70,7 @@ curl -H "Authorization: Bearer dev-only-token-do-not-use-in-production" \
 2. `pipeline/ingest_pdf.py` — pypdf outline + 폴백
 3. `pipeline/conceptizer.py` — `gemini-3.1-flash-lite-preview` 호출 + `prompts/conceptizer.md`
 4. `pipeline/{image_gen,video_gen,narration_gen,alignment}.py` — Gemini API 연동
-5. `pipeline/{rhythm_cut,compose,overlays,effects,make_mask}.py` — video-cli 포팅
+5. `pipeline/{rhythm_cut,compose,overlays,effects,make_mask}.py`
 6. `src-tauri/src/{sidecar,keychain}.rs` — 사이드카 spawn + Keychain 명령
 7. `scripts/{build_sidecar,codesign,notarize,make_dmg}.sh` + `.github/workflows/release.yml`
 
