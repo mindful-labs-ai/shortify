@@ -88,6 +88,20 @@ async def _handle_conceptize(task: Task) -> None:
             message="awaiting image choice",
             conceptized_json=conceptized,
         )
+        # 사용자가 conceptize 진행 중에 미리 컨셉을 선택했으면 그 slug 가
+        # jobs.image_concept_slug 에 박혀있다. 그 경우 stage 3 에서 멈추지
+        # 않고 즉시 4 로 진행 + generate_video enqueue.
+        job = (await s.execute(select(Job).where(Job.id == job_id))).scalar_one()
+        if job.image_concept_slug:
+            await _set_stage(
+                s,
+                job_id,
+                4,
+                message="enqueued generate_video (concept pre-selected)",
+            )
+    if job.image_concept_slug:
+        from .sqlite_impl import SqliteTaskQueue
+        await SqliteTaskQueue().enqueue("generate_video", {"job_id": job_id})
 
 
 async def _handle_generate_video(task: Task) -> None:

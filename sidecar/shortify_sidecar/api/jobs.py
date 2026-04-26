@@ -163,28 +163,49 @@ async def stream_job(job_id: str, request: Request):
 
 @router.post("/jobs/{job_id}/select-image")
 async def select_image(job_id: str, req: SelectImageRequest) -> dict:
+    """이미지 컨셉 선택. stage 0~3 어디서든 호출 가능.
+
+    - stage == 3: slug 저장 + stage 4로 advance + generate_video enqueue
+    - stage 0/1/2 (conceptize 진행 중): slug 만 저장, 워커가 stage 3 도달 시
+      slug 가 있는 걸 보고 자동으로 stage 4 로 진행 + generate_video enqueue
+    - stage 4+: 이미 진행 중 → 409
+    """
     async with session_factory()() as s:
         row = (await s.execute(select(Job).where(Job.id == job_id))).scalar_one_or_none()
         if row is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "job not found")
-        if row.stage != 3:
+        if row.stage > 3 or row.stage < 0:
             raise HTTPException(
-                status.HTTP_409_CONFLICT, f"job stage is {row.stage}, expected 3"
-                                          " (awaiting_image_choice)"
+                status.HTTP_409_CONFLICT,
+                f"job stage is {row.stage}; image already chosen or job done/failed",
             )
-        await s.execute(
-            update(Job)
-            .where(Job.id == job_id)
-            .values(
-                image_concept_slug=req.image_concept_slug,
-                stage=4,
-                stage_message="enqueued generate_video",
-                updated_at=datetime.now(tz=timezone.utc),
+
+        if row.stage == 3:
+            await s.execute(
+                update(Job)
+                .where(Job.id == job_id)
+                .values(
+                    image_concept_slug=req.image_concept_slug,
+                    stage=4,
+                    stage_message="enqueued generate_video",
+                    updated_at=datetime.now(tz=timezone.utc),
+                )
             )
-        )
+        else:
+            # 미리 선택만 저장 — 워커가 stage 3 도달 시 자동 진행
+            await s.execute(
+                update(Job)
+                .where(Job.id == job_id)
+                .values(
+                    image_concept_slug=req.image_concept_slug,
+                    updated_at=datetime.now(tz=timezone.utc),
+                )
+            )
         await s.commit()
         updated = (await s.execute(select(Job).where(Job.id == job_id))).scalar_one()
-    await SqliteTaskQueue().enqueue("generate_video", {"job_id": job_id})
+
+    if updated.stage == 4:
+        await SqliteTaskQueue().enqueue("generate_video", {"job_id": job_id})
     return _serialize(updated)
 
 

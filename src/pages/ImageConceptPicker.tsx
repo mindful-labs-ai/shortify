@@ -22,14 +22,28 @@ export default function ImageConceptPicker() {
     if (!selected || pendingJobIds.length === 0) return;
     setBusy(true);
     setErr(null);
-    try {
-      await Promise.all(pendingJobIds.map((id) => api.selectImage(id, selected)));
+    const results = await Promise.allSettled(
+      pendingJobIds.map((id) => api.selectImage(id, selected)),
+    );
+    const failed = results
+      .map((r, i) => ({ r, id: pendingJobIds[i] }))
+      .filter((x) => x.r.status === "rejected");
+    setBusy(false);
+
+    if (failed.length === 0) {
       setView("progress");
-    } catch (e) {
-      setErr(String(e));
-    } finally {
-      setBusy(false);
+      return;
     }
+    if (failed.length < pendingJobIds.length) {
+      // 일부 성공 — 진행 화면으로 이동, 실패한 것만 표시
+      setErr(`${failed.length} of ${pendingJobIds.length} jobs already past selection (likely already done or failed). Continuing with the rest.`);
+      setView("progress");
+      return;
+    }
+    setErr(
+      `All ${failed.length} jobs are no longer eligible for image choice. ` +
+      `They may already be processing or have failed (check Library / Settings → Trash).`,
+    );
   };
 
   return (
