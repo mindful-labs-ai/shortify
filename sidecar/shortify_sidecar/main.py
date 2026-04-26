@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
 from .api import admin, concepts, health, jobs, toc, upload
-from .db.seed import seed_image_concepts
+from .db.seed import seed_image_concepts, seed_prompts
 from .db.session import dispose, session_factory
 from .queue.sqlite_impl import SqliteTaskQueue
 from .queue.workers import WorkerPool
@@ -47,6 +47,9 @@ async def lifespan(app: FastAPI):
         added = await seed_image_concepts(s)
         if added:
             log.info("seeded %d image concepts", added)
+        added_prompts = await seed_prompts(s)
+        if added_prompts:
+            log.info("seeded %d prompts", added_prompts)
 
     queue = SqliteTaskQueue()
     pool = WorkerPool(queue, n=settings().n_workers)

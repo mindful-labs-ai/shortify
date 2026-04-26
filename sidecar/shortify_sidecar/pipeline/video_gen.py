@@ -2,22 +2,20 @@
 
 각 이미지의 클립 길이는 settings.video_duration_sec (기본 6, env 로 조정 가능).
 동시 요청 ≤ 2 (Veo 비용·rate 고려).
+
+motion 프롬프트는 DB ``prompts`` 테이블의 ``motion_<motion>`` key 에서 로드.
+지원 모션: subtle / medium / static. 알 수 없는 값은 subtle 로 폴백.
 """
 from __future__ import annotations
 
 import asyncio
 from pathlib import Path
 
-from .. import notify
+from .. import notify, prompts as _prompts
 from . import _gemini
 
 CONCURRENCY = 2
-
-MOTION_PRESETS = {
-    "subtle": "slow gentle pan, minimal motion, breathing room, soft camera drift",
-    "medium": "moderate camera dolly, light parallax",
-    "static": "no camera motion, only subtle element animation",
-}
+VALID_MOTIONS = {"subtle", "medium", "static"}
 
 
 async def generate(
@@ -29,7 +27,8 @@ async def generate(
 ) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     sem = asyncio.Semaphore(CONCURRENCY)
-    motion_prompt = MOTION_PRESETS.get(motion, MOTION_PRESETS["subtle"])
+    motion_key = f"motion_{motion if motion in VALID_MOTIONS else 'subtle'}"
+    motion_prompt = await _prompts.get(motion_key)
 
     async def one(idx: int, img: Path) -> Path:
         out = out_dir / f"scene_{idx:03d}.mp4"

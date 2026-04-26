@@ -71,6 +71,80 @@ export type AiTrace = {
   duration_ms: number | null;
 };
 
+export type AdminJobFull = {
+  id: string;
+  pdf_id: string;
+  toc_section_index: number;
+  toc_section_title: string;
+  image_concept_slug: string | null;
+  stage: number;
+  stage_message: string | null;
+  conceptized_json: unknown;
+  output_video_path: string | null;
+  duration_ms: number | null;
+  error: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  deleted_at: string | null;
+};
+
+export type AdminPdfBrief = {
+  id: string;
+  filename: string;
+  page_count: number | null;
+  size_bytes: number | null;
+  sha256: string | null;
+  created_at: string | null;
+  deleted_at: string | null;
+};
+
+export type AdminJobEvent = {
+  id: number;
+  job_id: string;
+  stage: number;
+  message: string | null;
+  created_at: string | null;
+};
+
+export type TimelineEntry = {
+  ts: string;
+  source: "event" | "task" | "trace";
+  ref_id: number;
+  // event:
+  stage?: number;
+  message?: string | null;
+  // task:
+  task_type?: string;
+  transition?: string; // enqueued | started | done | failed
+  worker_id?: string | null;
+  error?: string | null;
+  // trace:
+  kind?: string;
+  model?: string;
+  status?: string;
+  duration_ms?: number | null;
+};
+
+export type AdminJobDetail = {
+  job: AdminJobFull;
+  pdf: AdminPdfBrief | null;
+  events: AdminJobEvent[];
+  queue_tasks: QueueTaskRow[];
+  traces: AiTrace[];
+  timeline: TimelineEntry[];
+};
+
+export type AdminPrompt = {
+  key: string;
+  template: string;
+  description: string | null;
+  variables: string[];
+  updated_at: string | null;
+  default_template: string | null;
+  default_description: string | null;
+  default_variables: string[];
+};
+
 export type AdminState = {
   config: AdminConfig;
   queue: {
