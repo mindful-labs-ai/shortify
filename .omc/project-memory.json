@@ -37,33 +37,39 @@
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/02-logo.md",
-      "accessCount": 9,
-      "lastAccessed": 1777170660660,
+      "path": "wiki/design/character/01-bible.md",
+      "accessCount": 12,
+      "lastAccessed": 1777181859505,
       "type": "file"
     },
     {
       "path": "wiki/design/README.md",
-      "accessCount": 9,
-      "lastAccessed": 1777176331847,
-      "type": "file"
-    },
-    {
-      "path": "wiki/design/character/01-bible.md",
-      "accessCount": 8,
-      "lastAccessed": 1777169924849,
+      "accessCount": 12,
+      "lastAccessed": 1777181912956,
       "type": "file"
     },
     {
       "path": "wiki/design/05-next-steps.md",
-      "accessCount": 8,
-      "lastAccessed": 1777176340454,
+      "accessCount": 11,
+      "lastAccessed": 1777181925300,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/02-logo.md",
+      "accessCount": 10,
+      "lastAccessed": 1777177094064,
       "type": "file"
     },
     {
       "path": "wiki/design/character/02-usage.md",
-      "accessCount": 7,
-      "lastAccessed": 1777169979368,
+      "accessCount": 8,
+      "lastAccessed": 1777177095997,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/brand/03-color.md",
+      "accessCount": 8,
+      "lastAccessed": 1777181865613,
       "type": "file"
     },
     {
@@ -79,9 +85,9 @@
       "type": "file"
     },
     {
-      "path": "wiki/design/brand/03-color.md",
+      "path": "design/character/README.md",
       "accessCount": 5,
-      "lastAccessed": 1777170035814,
+      "lastAccessed": 1777181901358,
       "type": "file"
     },
     {
@@ -98,20 +104,14 @@
     },
     {
       "path": "wiki/design/brand/01-identity.md",
-      "accessCount": 3,
-      "lastAccessed": 1777168534930,
+      "accessCount": 4,
+      "lastAccessed": 1777177093747,
       "type": "file"
     },
     {
       "path": "wiki/design/brand/04-typography.md",
-      "accessCount": 3,
-      "lastAccessed": 1777168635209,
-      "type": "file"
-    },
-    {
-      "path": "design/character/README.md",
-      "accessCount": 3,
-      "lastAccessed": 1777170083753,
+      "accessCount": 4,
+      "lastAccessed": 1777177095284,
       "type": "file"
     },
     {
@@ -275,6 +275,18 @@
       "accessCount": 1,
       "lastAccessed": 1777176346594,
       "type": "directory"
+    },
+    {
+      "path": "wiki/design/character/03-cast.md",
+      "accessCount": 1,
+      "lastAccessed": 1777181840125,
+      "type": "file"
+    },
+    {
+      "path": "design/character/cast/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1777181879291,
+      "type": "file"
     }
   ],
   "userDirectives": []

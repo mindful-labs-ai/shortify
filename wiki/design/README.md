@@ -32,8 +32,9 @@
 
 | 번호 | 문서 | 내용 |
 |------|------|------|
-| 01 | [Bible](./character/01-bible.md) | 캐릭터 바이블 (성격 · 비주얼 · 세계관) |
-| 02 | [Usage](./character/02-usage.md) | 사용 가이드 (포즈 · 표정 · 금지 사용) |
+| 01 | [Bible](./character/01-bible.md) | 마스코트 쇼리 — 성격 · 비주얼 · 세계관 |
+| 02 | [Usage](./character/02-usage.md) | 마스코트 사용 가이드 (포즈 · 표정 · 금지 사용) |
+| 03 | [Cast](./character/03-cast.md) | 5인 캐스트 — Pip · Iris · Jay · Vera · Sage (영상 화자) |
 
 ---
 
@@ -47,6 +48,7 @@
 - **"HTML 정본 코드?"** → [`/design/ui/shortify-html-design/`](../../design/ui/shortify-html-design/)
 - **"마스코트 누구?"** → [character/01-bible](./character/01-bible.md) (쇼리 · 레서판다)
 - **"마스코트 사용 규칙?"** → [character/02-usage](./character/02-usage.md)
+- **"영상 화자(캐스트) 누구?"** → [character/03-cast](./character/03-cast.md) (Pip · Iris · Jay · Vera · Sage)
 - **"카피라이팅 톤?"** → [brand/01-identity §4](./brand/01-identity.md#4-톤앤매너-voice--tone)
 - **"로고 원본?"** → [`/design/brand/logo/`](../../design/brand/logo/)
 - **"앱 아이콘 원본?"** → [`/design/marketing/app-icon/`](../../design/marketing/app-icon/)
@@ -82,6 +84,7 @@ Last Updated: YYYY-MM-DD
 
 | 날짜 | 작성자 | 변경 |
 |------|--------|------|
+| 2026-04-26 | 김성곤 | Character Cast v1.1 반영 — 03-cast 신설 (Pip/Iris/Jay/Vera/Sage), 01-bible §7에 캐스트 관계 추가, brand/03-color 에 cast-lavender / cast-warm-gray 토큰 추가 |
 | 2026-04-26 | 김성곤 | HTML 정본 디자인 코드 동기화 — 02-tokens / 03-components 갱신, 04-screens 신설 (Main / TOC / Character / Generating 4-step 명세) |
 | 2026-04-26 | 김성곤 | Brand Identity Guide v1.1 반영 — 코랄 팔레트 / 쇼리(레서판다) 마스코트 / 폰트 스택 / 톤앤매너 확정 |
 | 2026-04-26 | 김성곤 | 디자인 문서 스캐폴드 |
