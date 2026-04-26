@@ -1,0 +1,30 @@
+[project]
+name = "shortify-sidecar"
+version = "0.0.0"
+description = "Shortify Python sidecar — FastAPI + video pipeline + Gemini integration"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.8",
+  "sqlmodel>=0.0.22",
+  "pypdf>=5.0",
+  "pdfplumber>=0.11",
+  "ffmpeg-python>=0.2",
+  "faster-whisper>=1.0",
+  "google-genai>=0.3",
+  "httpx>=0.27",
+  "python-multipart>=0.0.9",
+  "sse-starlette>=2.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.6", "mypy>=1.10"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shortify_sidecar*"]
