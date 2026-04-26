@@ -13,6 +13,7 @@ import logging
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -22,6 +23,7 @@ from ..db.models import Job, JobEvent, Pdf
 from ..db.session import session_factory
 from ..pipeline import get_pipeline
 from ..pipeline._trace import current_job_id
+from ..storage.paths import output_dir
 from .base import Task, TaskQueue
 
 log = logging.getLogger("shortify.worker")
@@ -115,6 +117,19 @@ async def _handle_conceptize(task: Task) -> None:
         await SqliteTaskQueue().enqueue("generate_video", {"job_id": job_id})
 
 
+def _existing_pngs(job_id: str, n: int) -> list[Path] | None:
+    """images/scene_NNN.png 가 정확히 n 장 모두 있으면 그 목록을, 아니면 None."""
+    out = output_dir(job_id) / "images"
+    paths = [out / f"scene_{i:03d}.png" for i in range(n)]
+    return paths if all(p.exists() for p in paths) else None
+
+
+def _existing_mp4s(job_id: str, n: int) -> list[Path] | None:
+    out = output_dir(job_id) / "clips"
+    paths = [out / f"scene_{i:03d}.mp4" for i in range(n)]
+    return paths if all(p.exists() for p in paths) else None
+
+
 async def _handle_generate_video(task: Task) -> None:
     job_id: str = task.payload["job_id"]
     pipeline = get_pipeline()
@@ -124,33 +139,58 @@ async def _handle_generate_video(task: Task) -> None:
     assert job.conceptized_json, "conceptized_json missing"
 
     started = datetime.now(tz=timezone.utc)
+    narration_text = " ".join(b["text"] for b in job.conceptized_json["beats"])
 
+    # ── Stage 4: Imaging (이미 14장 있으면 재사용) ──────────────────
     scenes = pipeline.split_scenes(job.conceptized_json)
-    async with session_factory()() as s:
-        await _set_stage(s, job_id, 4, message="generating images")
-    images = await pipeline.generate_images(
-        scenes, job.image_concept_slug, job_id=job_id
-    )
+    cached_pngs = _existing_pngs(job_id, len(scenes))
+    if cached_pngs:
+        log.info("  [%s] reusing %d cached images", job_id, len(cached_pngs))
+        images = cached_pngs
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 4, message="reused cached images")
+    else:
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 4, message="generating images")
+        images = await pipeline.generate_images(
+            scenes, job.image_concept_slug, job_id=job_id
+        )
 
-    async with session_factory()() as s:
-        await _set_stage(s, job_id, 5, message="generating clips")
-    clips = await pipeline.generate_clips(images, motion="subtle", job_id=job_id)
+    # ── Stage 5: Clipping (이미 14개 mp4 있으면 재사용) ────────────
+    cached_mp4s = _existing_mp4s(job_id, len(images))
+    if cached_mp4s:
+        log.info("  [%s] reusing %d cached clips", job_id, len(cached_mp4s))
+        clips = cached_mp4s
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 5, message="reused cached clips")
+    else:
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 5, message="generating clips")
+        clips = await pipeline.generate_clips(images, motion="subtle", job_id=job_id)
 
-    async with session_factory()() as s:
-        await _set_stage(s, job_id, 6, message="generating narration")
-    narration = await pipeline.generate_narration(
-        text=" ".join(b["text"] for b in job.conceptized_json["beats"]),
-        voice="ko_learning",
-        speed=1.0,
-        job_id=job_id,
-    )
+    # ── Stage 6: Narration (mp3 있으면 재사용) ────────────────────
+    narration_path = output_dir(job_id) / "narration.mp3"
+    if narration_path.exists() and narration_path.stat().st_size > 0:
+        log.info("  [%s] reusing cached narration", job_id)
+        narration = narration_path
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 6, message="reused cached narration")
+    else:
+        async with session_factory()() as s:
+            await _set_stage(s, job_id, 6, message="generating narration")
+        narration = await pipeline.generate_narration(
+            text=narration_text,
+            voice="ko_learning",
+            speed=1.0,
+            job_id=job_id,
+        )
 
+    # ── Stage 7: Alignment (캐시 안 함 — 빠름·결정적) ──────────────
     async with session_factory()() as s:
         await _set_stage(s, job_id, 7, message="aligning words")
-    words = await pipeline.align_words(
-        narration, " ".join(b["text"] for b in job.conceptized_json["beats"])
-    )
+    words = await pipeline.align_words(narration, narration_text)
 
+    # ── Stage 8: Compose (항상 새로 — final.mp4 생성 단계) ────────
     async with session_factory()() as s:
         await _set_stage(s, job_id, 8, message="composing")
     final = pipeline.compose_final(

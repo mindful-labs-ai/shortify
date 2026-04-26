@@ -214,23 +214,60 @@ async def select_image(job_id: str, req: SelectImageRequest) -> dict:
 
 @router.post("/jobs/{job_id}/retry")
 async def retry_job(job_id: str) -> dict:
+    """Stage-aware retry — 기존 산출물을 재사용해 가장 늦은 안전한 단계에서 재개.
+
+    재개 정책:
+      - conceptized_json 없음           → conceptize task (stage 0 부터)
+      - conceptized_json 있음 + concept 미선택 → stage 3, conceptize 재실행 안 함
+        (UI 가 select-image 호출하면 워커가 generate_video 로 진행)
+      - conceptized_json 있음 + concept 선택됨 → generate_video task
+        (stage 4~8. 워커가 디스크의 images/*.png · clips/*.mp4 · narration.mp3
+        를 보고 단계별 재사용)
+
+    실패한 job (stage=-1) 만 허용. done(9) job 은 ``restore_job`` 로.
+    """
     async with session_factory()() as s:
-        row = (await s.execute(select(Job).where(Job.id == job_id))).scalar_one_or_none()
+        row = (
+            await s.execute(select(Job).where(Job.id == job_id))
+        ).scalar_one_or_none()
         if row is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "job not found")
         if row.stage != -1:
             raise HTTPException(status.HTTP_409_CONFLICT, "only failed jobs can retry")
+
+        has_concept_json = bool(row.conceptized_json)
+        has_concept_slug = bool(row.image_concept_slug)
+
+        if has_concept_json and has_concept_slug:
+            new_stage = 4
+            task_type = "generate_video"
+            msg = "retry from stage 4 (reusing cached artifacts when present)"
+        elif has_concept_json:
+            new_stage = 3
+            task_type = None  # UI 의 select-image 가 generate_video 를 enqueue
+            msg = "retry: awaiting image choice (stage 3)"
+        else:
+            new_stage = 0
+            task_type = "conceptize"
+            msg = "retry from stage 0 (re-running conceptize)"
+
         await s.execute(
             update(Job)
             .where(Job.id == job_id)
             .values(
-                stage=0, stage_message=None, error=None,
+                stage=new_stage,
+                stage_message=msg,
+                error=None,
                 updated_at=datetime.now(tz=timezone.utc),
             )
         )
         await s.commit()
-        updated = (await s.execute(select(Job).where(Job.id == job_id))).scalar_one()
-    await SqliteTaskQueue().enqueue("conceptize", {"job_id": job_id})
+        updated = (
+            await s.execute(select(Job).where(Job.id == job_id))
+        ).scalar_one()
+
+    if task_type:
+        await SqliteTaskQueue().enqueue(task_type, {"job_id": job_id})
     return _serialize(updated)
 
 
