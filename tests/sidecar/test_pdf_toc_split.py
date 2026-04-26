@@ -40,6 +40,7 @@ import argparse
 import asyncio
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -154,7 +155,25 @@ async def stage1_gemini_toc(pdf_path: Path) -> dict:
         ) from e
 
 
-# ───────────────────── Stage 2: TOC → pypdf 본문 추출 ─────────────────────
+# ───────────────────── Stage 2: TOC 페이지 범위 → Gemini OCR 추출 ─────────────────────
+# 한국 교과서·논문 등 스캔 PDF 는 pypdf 로 텍스트가 0자.
+# → 페이지 구간만 잘라낸 mini-PDF 를 Gemini 에 다시 업로드해 본문을 받는다 (= Gemini OCR).
+
+_STAGE2_PROMPT = """\
+You are given the page range corresponding to ONE section of a textbook
+("{title}"). Extract the FULL readable body text of these pages.
+
+Rules:
+- Output JSON: {{"text": "<full body text>"}}
+- Preserve the original language (Korean stays Korean).
+- Read all visible body copy, including diagrams' captions and example
+  problems. Skip page numbers, running headers/footers, and pure
+  decorative elements.
+- Maintain reading order. Use blank lines between paragraphs.
+- Do NOT summarize, paraphrase, or translate — return the text as it
+  appears.
+"""
+
 
 def _flatten_toc(toc: dict) -> list[dict]:
     flat: list[dict] = []
@@ -186,104 +205,200 @@ def _flatten_toc(toc: dict) -> list[dict]:
     return flat
 
 
-def stage2_extract_sections(
-    pdf_path: Path, toc: dict, max_chars: int = 4000
+def _leaf_targets(toc: dict) -> list[dict]:
+    """비교 단위 = leaf. subsection 이 있으면 그것, 없으면 chapter."""
+    out: list[dict] = []
+    for ch_i, chapter in enumerate(toc.get("chapters") or []):
+        subs = chapter.get("subsections") or []
+        if subs:
+            for sub_i, sub in enumerate(subs):
+                out.append(
+                    {
+                        "level": "subsection",
+                        "chapter_idx": ch_i,
+                        "subsection_idx": sub_i,
+                        "section_path": f"{chapter.get('title')} > {sub.get('title')}",
+                        "title": sub.get("title"),
+                        "parent_title": chapter.get("title"),
+                        "page_start": sub.get("page_start"),
+                        "page_end": sub.get("page_end"),
+                        "summary_from_gemini": sub.get("summary"),
+                        "key_points_from_gemini": sub.get("key_points") or [],
+                    }
+                )
+        else:
+            out.append(
+                {
+                    "level": "chapter",
+                    "chapter_idx": ch_i,
+                    "section_path": chapter.get("title"),
+                    "title": chapter.get("title"),
+                    "parent_title": None,
+                    "page_start": chapter.get("page_start"),
+                    "page_end": chapter.get("page_end"),
+                    "summary_from_gemini": chapter.get("summary"),
+                    "key_points_from_gemini": chapter.get("key_points") or [],
+                }
+            )
+    return out
+
+
+def _clip_pdf_pages(src_path: Path, page_start: int, page_end: int, dst_path: Path) -> None:
+    from pypdf import PdfReader as _R, PdfWriter as _W
+
+    reader = _R(str(src_path))
+    writer = _W()
+    for p in range(page_start, page_end + 1):
+        writer.add_page(reader.pages[p])
+    with dst_path.open("wb") as f:
+        writer.write(f)
+
+
+def _gemini_section_text(clipped_pdf: Path, title: str) -> str:
+    """clipped mini-PDF → Gemini → 섹션 본문 raw text."""
+    from google import genai
+    from google.genai import types as gtypes
+
+    client = genai.Client(api_key=settings().gemini_api_key)
+    prompt = _STAGE2_PROMPT.format(title=title)
+
+    # 작은 mini-PDF 는 인라인이 빠르고 안정적.
+    contents = [
+        gtypes.Part.from_bytes(
+            data=clipped_pdf.read_bytes(),
+            mime_type="application/pdf",
+        ),
+        prompt,
+    ]
+    resp = client.models.generate_content(
+        model=settings().model_text,
+        contents=contents,
+        config={"response_mime_type": "application/json"},
+    )
+    raw = resp.text or ""
+    try:
+        return (json.loads(raw).get("text") or "").strip()
+    except json.JSONDecodeError:
+        return raw.strip()
+
+
+async def stage2_extract_sections(
+    pdf_path: Path,
+    toc: dict,
+    *,
+    max_sections: int,
+    max_chars: int = 4000,
+    concurrency: int = 3,
 ) -> list[dict]:
+    """leaf 섹션마다 page 구간 잘라 Gemini 로 본문 OCR 추출.
+
+    비용 통제: ``max_sections`` (0 = 무제한), 동시 호출 ``concurrency``.
+    """
+    import tempfile
+
     reader = PdfReader(str(pdf_path))
     total = len(reader.pages)
-    out: list[dict] = []
 
-    for entry in _flatten_toc(toc):
-        ps = entry.get("page_start")
-        pe = entry.get("page_end")
-        if ps is None or pe is None:
-            out.append({**entry, "extracted_snippet": None, "error": "missing page range"})
-            continue
+    targets = _leaf_targets(toc)
+    if max_sections > 0:
+        targets = targets[:max_sections]
+
+    sem = asyncio.Semaphore(concurrency)
+
+    async def _process(entry: dict) -> dict:
+        ps_raw = entry.get("page_start")
+        pe_raw = entry.get("page_end")
+        if ps_raw is None or pe_raw is None:
+            return {**entry, "extracted_full": "", "error": "missing page range"}
         try:
-            ps = int(ps)
-            pe = int(pe)
+            ps = int(ps_raw)
+            pe = int(pe_raw)
         except (TypeError, ValueError):
-            out.append({**entry, "extracted_snippet": None, "error": f"non-int range: {ps},{pe}"})
-            continue
+            return {**entry, "extracted_full": "", "error": f"non-int range: {ps_raw},{pe_raw}"}
         ps_c = max(0, ps)
         pe_c = min(total - 1, pe)
         if ps_c > pe_c:
-            out.append(
-                {
-                    **entry,
-                    "page_range_resolved": [ps_c, pe_c],
-                    "extracted_snippet": None,
-                    "error": f"invalid range after clamp: {ps_c} > {pe_c}",
-                }
-            )
-            continue
-
-        chunks: list[str] = []
-        page_errors: list[str] = []
-        for p in range(ps_c, pe_c + 1):
-            try:
-                chunks.append(reader.pages[p].extract_text() or "")
-            except Exception as exc:  # noqa: BLE001
-                page_errors.append(f"page {p}: {exc}")
-        text = "\n".join(chunks).strip()
-        out.append(
-            {
+            return {
                 **entry,
                 "page_range_resolved": [ps_c, pe_c],
-                "page_count_in_range": pe_c - ps_c + 1,
-                "char_count": len(text),
-                "truncated": len(text) > max_chars,
-                "extracted_snippet": text[:max_chars],
-                "extracted_full": text,  # stage 3 에서 사용 (저장용 아님)
-                "page_errors": page_errors or None,
+                "extracted_full": "",
+                "error": f"invalid range after clamp: {ps_c} > {pe_c}",
             }
+
+        async with sem:
+
+            def _do() -> tuple[str, int]:
+                with tempfile.TemporaryDirectory() as td:
+                    clipped = Path(td) / "clip.pdf"
+                    _clip_pdf_pages(pdf_path, ps_c, pe_c, clipped)
+                    clip_size = clipped.stat().st_size
+                    return _gemini_section_text(clipped, entry.get("title") or ""), clip_size
+
+            t0 = time.perf_counter()
+            try:
+                text, clip_bytes = await asyncio.to_thread(_do)
+            except Exception as exc:  # noqa: BLE001
+                elapsed = time.perf_counter() - t0
+                print(
+                    f"        [ocr] {entry.get('title')!r} pages={ps_c}-{pe_c} "
+                    f"ERROR after {elapsed:.1f}s: {type(exc).__name__}: {exc}",
+                    flush=True,
+                )
+                return {
+                    **entry,
+                    "page_range_resolved": [ps_c, pe_c],
+                    "extracted_full": "",
+                    "elapsed_sec": round(elapsed, 2),
+                    "error": f"gemini ocr failed: {type(exc).__name__}: {exc}",
+                }
+            elapsed = time.perf_counter() - t0
+
+        n_pages = pe_c - ps_c + 1
+        print(
+            f"        [ocr] {entry.get('title')!r} pages={ps_c}-{pe_c} "
+            f"({n_pages}p, clip={clip_bytes / 1024:.0f}KB) "
+            f"→ {len(text)} chars in {elapsed:.1f}s "
+            f"({elapsed / max(1, n_pages):.1f}s/page)",
+            flush=True,
         )
-    return out
+
+        return {
+            **entry,
+            "page_range_resolved": [ps_c, pe_c],
+            "page_count_in_range": n_pages,
+            "char_count": len(text),
+            "truncated": len(text) > max_chars,
+            "extracted_snippet": text[:max_chars],
+            "extracted_full": text,
+            "elapsed_sec": round(elapsed, 2),
+            "clip_size_kb": round(clip_bytes / 1024, 1),
+        }
+
+    return await asyncio.gather(*[_process(t) for t in targets])
 
 
 # ───────────── Stage 3: 두 payload 로 conceptizer 호출 → side-by-side ─────────────
 
 def _comparison_targets(
-    toc: dict, stage2: list[dict]
-) -> list[tuple[dict, dict | None]]:
-    """비교 단위 = leaf section. subsection 이 있으면 그것, 없으면 chapter.
+    stage2: list[dict],
+) -> list[tuple[dict, dict]]:
+    """비교 대상 = stage2 가 처리한 leaf 섹션 그대로.
 
-    각 target 에 대응하는 stage2 entry 도 함께 매칭.
+    return: [(meta_for_approach_a, stage2_entry_for_approach_b), ...]
     """
-    by_idx: dict[tuple[str, int, int | None], dict] = {}
+    out: list[tuple[dict, dict]] = []
     for s in stage2:
-        if s["level"] == "subsection":
-            by_idx[("subsection", s["chapter_idx"], s["subsection_idx"])] = s
-        else:
-            by_idx[("chapter", s["chapter_idx"], None)] = s
-
-    targets: list[tuple[dict, dict | None]] = []
-    for ch_i, chapter in enumerate(toc.get("chapters") or []):
-        subs = chapter.get("subsections") or []
-        if subs:
-            for sub_i, sub in enumerate(subs):
-                meta = {
-                    "level": "subsection",
-                    "section_path": f"{chapter.get('title')} > {sub.get('title')}",
-                    "title": sub.get("title"),
-                    "parent_title": chapter.get("title"),
-                    "page_range": [sub.get("page_start"), sub.get("page_end")],
-                    "summary_from_gemini": sub.get("summary"),
-                    "key_points_from_gemini": sub.get("key_points") or [],
-                }
-                targets.append((meta, by_idx.get(("subsection", ch_i, sub_i))))
-        else:
-            meta = {
-                "level": "chapter",
-                "section_path": chapter.get("title"),
-                "title": chapter.get("title"),
-                "parent_title": None,
-                "page_range": [chapter.get("page_start"), chapter.get("page_end")],
-                "summary_from_gemini": chapter.get("summary"),
-                "key_points_from_gemini": chapter.get("key_points") or [],
-            }
-            targets.append((meta, by_idx.get(("chapter", ch_i, None))))
-    return targets
+        meta = {
+            "level": s["level"],
+            "section_path": s.get("section_path"),
+            "title": s.get("title"),
+            "parent_title": s.get("parent_title"),
+            "page_range": [s.get("page_start"), s.get("page_end")],
+            "summary_from_gemini": s.get("summary_from_gemini"),
+            "key_points_from_gemini": s.get("key_points_from_gemini") or [],
+        }
+        out.append((meta, s))
+    return out
 
 
 def _approach_a_payload(meta: dict) -> str:
@@ -300,7 +415,8 @@ def _approach_a_payload(meta: dict) -> str:
 
 
 def _approach_b_payload(stage2_entry: dict | None) -> str:
-    """Approach B: pypdf 로 추출한 raw 본문 (conceptizer 가 내부 12k 컷)."""
+    """Approach B: 페이지 구간을 잘라 Gemini 가 OCR 한 raw 본문
+    (conceptizer 내부 12k 컷)."""
     if not stage2_entry:
         return ""
     return (stage2_entry.get("extracted_full") or "").strip()
@@ -340,15 +456,11 @@ def _diff_observations(a_concept: dict, b_concept: dict) -> dict:
 
 
 async def stage3_compare_downstream(
-    toc: dict,
     stage2: list[dict],
     *,
-    max_sections: int,
     lang: str,
 ) -> dict:
-    targets = _comparison_targets(toc, stage2)
-    if max_sections > 0:
-        targets = targets[:max_sections]
+    targets = _comparison_targets(stage2)
 
     comparisons: list[dict] = []
     for meta, s2 in targets:
@@ -373,7 +485,7 @@ async def stage3_compare_downstream(
                     "conceptized": a_concept,
                 },
                 "approach_b_pdf_extract": {
-                    "payload_source": "pypdf.extract_pages",
+                    "payload_source": "gemini-clip-pdf.ocr",
                     "payload_char_count": len(b_passage),
                     "payload_passage_preview": b_passage[:2000],
                     "payload_passage_truncated": len(b_passage) > 2000,
@@ -414,8 +526,14 @@ async def run(
     stage3_path = out_dir / "stage3_downstream_comparison.json"
 
     # ── Stage 1
-    print(f"[1/3] Gemini TOC 추출 — {pdf_path.name}", flush=True)
+    pdf_mb = pdf_path.stat().st_size / 1024 / 1024
+    print(
+        f"[1/3] Gemini TOC 추출 — {pdf_path.name} ({pdf_mb:.1f} MB)",
+        flush=True,
+    )
+    t1 = time.perf_counter()
     toc = await stage1_gemini_toc(pdf_path)
+    stage1_elapsed = time.perf_counter() - t1
     stage1_path.write_text(json.dumps(toc, ensure_ascii=False, indent=2), encoding="utf-8")
     chapters = toc.get("chapters") or []
     n_chap = len(chapters)
@@ -427,14 +545,24 @@ async def run(
     )
     print(
         f"      → {stage1_path}\n"
-        f"        chapters={n_chap}  subsections={n_sub}  has_summary/key_points={has_details}",
+        f"        chapters={n_chap}  subsections={n_sub}  "
+        f"has_summary/key_points={has_details}\n"
+        f"        elapsed: {stage1_elapsed:.1f}s",
         flush=True,
     )
 
     # ── Stage 2
-    print("[2/3] TOC → pypdf 페이지 텍스트 추출", flush=True)
-    sections = stage2_extract_sections(pdf_path, toc, max_chars=max_chars)
-    # 저장 시 extracted_full 은 빼서 파일 폭발 방지
+    print(
+        f"[2/3] TOC 페이지 구간 → Gemini OCR 본문 추출 "
+        f"(leaf 섹션 최대 {max_sections or '∞'}개)",
+        flush=True,
+    )
+    t2 = time.perf_counter()
+    sections = await stage2_extract_sections(
+        pdf_path, toc, max_sections=max_sections, max_chars=max_chars
+    )
+    stage2_elapsed = time.perf_counter() - t2
+    # 저장 시 extracted_full 은 빼서 파일 폭발 방지 (snippet 만 남김)
     stage2_payload = {
         "pdf": pdf_path.name,
         "total_sections": len(sections),
@@ -443,8 +571,17 @@ async def run(
     stage2_path.write_text(
         json.dumps(stage2_payload, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    n_ok = sum(1 for s in sections if s.get("extracted_snippet"))
-    print(f"      → {stage2_path}\n        sections={len(sections)}  extracted_ok={n_ok}", flush=True)
+    n_ok = sum(1 for s in sections if (s.get("extracted_full") or "").strip())
+    n_err = sum(1 for s in sections if s.get("error"))
+    per_sec_times = [s["elapsed_sec"] for s in sections if "elapsed_sec" in s]
+    avg_t = sum(per_sec_times) / len(per_sec_times) if per_sec_times else 0
+    max_t = max(per_sec_times) if per_sec_times else 0
+    print(
+        f"      → {stage2_path}\n"
+        f"        sections={len(sections)}  ocr_ok={n_ok}  errors={n_err}\n"
+        f"        wall={stage2_elapsed:.1f}s  per-section avg={avg_t:.1f}s  max={max_t:.1f}s",
+        flush=True,
+    )
 
     # ── Stage 3
     if skip_conceptize:
@@ -459,13 +596,11 @@ async def run(
         }
 
     print(
-        f"[3/3] Approach A(목차 요약) vs B(pypdf 본문) 으로 conceptizer 호출 "
-        f"(최대 {max_sections}개 섹션)",
+        "[3/3] Approach A(목차 요약+keypoints) vs B(Gemini OCR 본문) 으로 "
+        "conceptizer 호출",
         flush=True,
     )
-    comparison = await stage3_compare_downstream(
-        toc, sections, max_sections=max_sections, lang=lang
-    )
+    comparison = await stage3_compare_downstream(sections, lang=lang)
     stage3_path.write_text(
         json.dumps(comparison, ensure_ascii=False, indent=2), encoding="utf-8"
     )
@@ -481,7 +616,7 @@ async def run(
     print()
     print("=== Summary ===")
     print(f" Stage 1 (Gemini TOC):      chapters={n_chap}  subsections={n_sub}  details={has_details}")
-    print(f" Stage 2 (PDF extract):     sections={len(sections)}  ok={n_ok}")
+    print(f" Stage 2 (Gemini OCR):      sections={len(sections)}  ok={n_ok}  errors={n_err}")
     print(
         f" Stage 3 (downstream A/B):  compared={s['n_compared']}  "
         f"A_fail={s['n_a_failed']}  B_fail={s['n_b_failed']}  "
