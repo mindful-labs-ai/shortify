@@ -13,6 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from .. import prompts as _prompts
 from ..settings import settings
 from ._trace import trace
 
@@ -71,16 +72,10 @@ async def pdf_toc(pdf_path: Path, page_count: int) -> list[dict]:
     """PDF 전체를 Gemini 에 첨부해 flat TOC 를 추출."""
     import json as _json
 
-    prompt = (
-        "Extract the table of contents from this PDF. "
-        "Return a strict JSON array of "
-        '{"title": str, "page_start": int 0-indexed, '
-        '"page_end": int 0-indexed inclusive, "depth": int}. '
-        f"Total page count is {page_count}; page_start and page_end "
-        f"must be within [0, {page_count - 1}]. "
-        "Use depth 0 for top-level sections, 1+ for nested. "
-        "If the PDF has no explicit TOC, infer reasonable sections "
-        "from headings or split evenly."
+    prompt = await _prompts.get(
+        "pdf_toc",
+        PAGE_COUNT=page_count,
+        PAGE_LAST=page_count - 1,
     )
 
     def _call():
@@ -269,8 +264,26 @@ async def i2v(
         while not op.done:
             _t.sleep(5)
             op = c.operations.get(op)
-        video = op.response.generated_videos[0]
-        video.video.save(str(out_path))
+        gen_videos = (
+            getattr(getattr(op, "response", None), "generated_videos", None) or []
+        )
+        if not gen_videos:
+            raise RuntimeError("Veo: empty generated_videos in operation response")
+        v = gen_videos[0].video
+        # 1) inline bytes 가 이미 있으면 그대로 저장
+        vb = getattr(v, "video_bytes", None)
+        if vb:
+            out_path.write_bytes(vb)
+        else:
+            # 2) URI 만 있으면 files.download 로 다운로드.
+            #    (Video.save 는 'Saving remote videos is not supported' 로 거절함)
+            uri = getattr(v, "uri", None)
+            if not uri:
+                raise RuntimeError("Veo: response has neither video_bytes nor uri")
+            data = c.files.download(file=v)
+            if not data:
+                raise RuntimeError(f"Veo: empty download from {uri}")
+            out_path.write_bytes(data)
         return out_path.stat().st_size if out_path.exists() else None
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -359,12 +372,7 @@ async def align_words_audio(audio_path: Path, text_in: str) -> list[dict]:
 
     응답: ``[{"word": str, "start": float, "end": float}, ...]``
     """
-    prompt = (
-        "Return word-level timestamps for the spoken audio aligned to the "
-        "transcript. Output strict JSON array of "
-        '{"word": str, "start": float seconds, "end": float seconds}. '
-        f"Transcript: {text_in}"
-    )
+    prompt = await _prompts.get("align_words_audio", TRANSCRIPT=text_in)
 
     def _call():
         c = client()
