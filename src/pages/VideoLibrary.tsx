@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import VideoPlayer from "../components/VideoPlayer";
 import { api } from "../lib/api";
 import { tauri } from "../lib/tauri";
@@ -9,11 +9,14 @@ export default function VideoLibrary() {
   const setJobs = useAppStore((s) => s.setJobs);
   const [playing, setPlaying] = useState<string | null>(null);
 
-  const refresh = () => api.listJobs().then(setJobs).catch(() => undefined);
+  const refresh = useCallback(
+    () => api.listJobs().then((r) => setJobs(r.jobs)).catch(() => undefined),
+    [setJobs],
+  );
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [refresh]);
 
   const done = jobs.filter((j) => j.stage === 9 && j.output_video_path);
 

@@ -10,6 +10,7 @@ dependencies = [
   "sqlmodel>=0.0.22",
   "alembic>=1.13",                 # 마이그레이션 (런타임에 schema upgrade 적용)
   "aiosqlite>=0.20",               # async SQLite 드라이버 (v0 기본)
+  "greenlet>=3.0",                 # SQLAlchemy async 필수 (arm64 wheel 자동 설치 안 됨)
   "pypdf>=5.0",
   "pdfplumber>=0.11",
   "ffmpeg-python>=0.2",

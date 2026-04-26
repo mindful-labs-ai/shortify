@@ -60,7 +60,7 @@ export const api = {
       body: JSON.stringify({ pdf_id: pdfId, sections }),
     }),
 
-  listJobs: () => request<Job[]>("/jobs"),
+  listJobs: () => request<{ jobs: Job[] }>("/jobs"),
   getJob: (id: string) => request<Job>(`/jobs/${id}`),
 
   selectImage: (id: string, slug: string) =>
@@ -87,7 +87,7 @@ export const api = {
       { method: "DELETE" },
     ),
 
-  imageConcepts: () => request<ImageConcept[]>("/image-concepts"),
+  imageConcepts: () => request<{ concepts: ImageConcept[] }>("/image-concepts"),
 
   // SSE는 sse.ts 사용 (EventSource는 헤더 못 붙이므로 토큰을 쿼리로)
   jobStreamUrl: (id: string) => {

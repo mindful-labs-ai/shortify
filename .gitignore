@@ -58,6 +58,9 @@ coverage/
 *.lcov
 .nyc_output
 
+# ───────────── TypeScript build info ─────────────
+*.tsbuildinfo
+
 # ───────────── Rust / Cargo / Tauri ─────────────
 src-tauri/target/
 src-tauri/gen/

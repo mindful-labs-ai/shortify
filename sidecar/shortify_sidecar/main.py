@@ -1,6 +1,7 @@
 """Shortify Sidecar entry point."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -29,7 +30,8 @@ def _run_migrations() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("starting Shortify sidecar at %s:%s", settings().host, settings().port)
-    _run_migrations()
+    # alembic env.py 가 자체 asyncio.run() 을 부르므로 별도 스레드에서 실행
+    await asyncio.to_thread(_run_migrations)
 
     async with session_factory()() as s:
         added = await seed_image_concepts(s)

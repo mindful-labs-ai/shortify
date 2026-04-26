@@ -13,6 +13,8 @@ export default tseslint.config(
       "sidecar",
       "assets",
       "tests/sidecar",
+      "vite.config.ts",
+      "**/*.config.{ts,js,mjs}",
     ],
   },
   {
