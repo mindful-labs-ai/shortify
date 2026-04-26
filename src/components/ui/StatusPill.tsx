@@ -49,7 +49,7 @@ export default function StatusPill({ status, stageLabel }: StatusPillProps) {
     return (
       <span style={pillStyle("var(--mint-50)", "var(--mint-900)", "var(--mint-500)")}>
         <Dot color="var(--mint-500)" />
-        완료
+        Done
       </span>
     );
   }
@@ -57,7 +57,7 @@ export default function StatusPill({ status, stageLabel }: StatusPillProps) {
     return (
       <span style={pillStyle("var(--coral-50)", "var(--coral-900)", "var(--coral-300)")}>
         <PulsingDot color="var(--coral-500)" />
-        {stageLabel || "만드는 중"}
+        {stageLabel || "Rendering"}
       </span>
     );
   }
@@ -65,7 +65,7 @@ export default function StatusPill({ status, stageLabel }: StatusPillProps) {
     return (
       <span style={pillStyle("var(--yellow-50)", "var(--yellow-900)", "var(--yellow-500)")}>
         <Dot color="var(--yellow-500)" />
-        {stageLabel || "확인 필요"}
+        {stageLabel || "Needs review"}
       </span>
     );
   }

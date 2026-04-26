@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import VideoPlayer from "../components/VideoPlayer";
 import { api } from "../lib/api";
 import { tauri } from "../lib/tauri";
 import { useAppStore } from "../store";
+
+function thumbnailFor(videoPath: string): string {
+  const dir = videoPath.replace(/\/[^/]+$/, "");
+  return convertFileSrc(`${dir}/images/scene_000.png`);
+}
 
 export default function VideoLibrary() {
   const jobs = useAppStore((s) => s.jobs);
@@ -45,9 +51,17 @@ export default function VideoLibrary() {
             <button
               type="button"
               onClick={() => setPlaying(j.output_video_path!)}
-              className="block aspect-[9/16] w-full bg-neutral-900 text-white"
+              className="relative block aspect-[9/16] w-full overflow-hidden bg-neutral-900 text-white"
             >
-              <span className="flex h-full items-center justify-center text-3xl opacity-70 group-hover:opacity-100">
+              <img
+                src={thumbnailFor(j.output_video_path!)}
+                alt=""
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-3xl opacity-70 transition group-hover:opacity-100">
                 ▶
               </span>
             </button>
@@ -80,7 +94,7 @@ export default function VideoLibrary() {
       </div>
 
       {playing ? (
-        <VideoPlayer src={`file://${playing}`} onClose={() => setPlaying(null)} />
+        <VideoPlayer src={convertFileSrc(playing)} onClose={() => setPlaying(null)} />
       ) : null}
     </div>
   );

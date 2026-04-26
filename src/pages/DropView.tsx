@@ -20,17 +20,17 @@ import Shori from "@/components/brand/Shori";
 // ─────────────────────────────────────────────────────────────
 
 const STAGE_LABELS: Record<number, string> = {
-  [-1]: "실패",
-  0: "대기 중",
-  1: "PDF 분석 중",
-  2: "핵심 개념 추출 중",
-  3: "이미지 컨셉 골라주세요",
-  4: "이미지 만드는 중",
-  5: "영상 클립 만드는 중",
-  6: "내레이션 만드는 중",
-  7: "오디오 정렬 중",
-  8: "영상 합치는 중",
-  9: "완료",
+  [-1]: "Failed",
+  0: "Waiting",
+  1: "Analyzing PDF",
+  2: "Extracting key concepts",
+  3: "Pick an image concept",
+  4: "Generating images",
+  5: "Generating video clips",
+  6: "Generating narration",
+  7: "Aligning audio",
+  8: "Composing video",
+  9: "Done",
 };
 
 function statusOf(stage: number): "done" | "rendering" | "awaiting" | "failed" {
@@ -149,11 +149,11 @@ function DropZone({
               lineHeight: 1.15,
             }}
           >
-            {busy ?? "새 PDF로 한 입 더 만들어볼까요?"}
+            {busy ?? "Ready for another PDF?"}
           </div>
           {!busy && (
             <div style={{ marginTop: 4, fontSize: 13, color: "var(--ink-mute)" }}>
-              여기에 끌어다 놓거나 파일을 선택하면, 평균 10~12분이면 한 편이 완성돼요.
+              Drop a file here or pick one — a video takes ~10–12 minutes on average.
             </div>
           )}
           {err && (
@@ -164,8 +164,8 @@ function DropZone({
         </div>
         {!busy && (
           <>
-            <Btn variant="secondary" size="md">샘플 PDF</Btn>
-            <Btn variant="primary" size="md" onClick={onClickPick}>파일 선택</Btn>
+            <Btn variant="secondary" size="md">Sample PDF</Btn>
+            <Btn variant="primary" size="md" onClick={onClickPick}>Choose file</Btn>
           </>
         )}
       </div>
@@ -264,7 +264,7 @@ function DropZone({
                 display: "inline-block",
               }}
             />
-            새 작업 시작
+            Start a new project
           </div>
 
           <div
@@ -284,13 +284,13 @@ function DropZone({
               </span>
             ) : isHover ? (
               <>
-                여기에 <span style={{ color: "var(--coral-500)" }}>탁!</span><br />
-                놓아 주세요
+                <span style={{ color: "var(--coral-500)" }}>Drop</span> it<br />
+                right here
               </>
             ) : (
               <>
-                오늘은 뭐<br />
-                <span style={{ color: "var(--coral-500)" }}>한 입</span> 배워볼까요?
+                What's <span style={{ color: "var(--coral-500)" }}>one bite</span><br />
+                you're learning today?
               </>
             )}
           </div>
@@ -306,7 +306,7 @@ function DropZone({
                 textWrap: "pretty",
               } as React.CSSProperties}
             >
-              교과서·논문·강의 자료를 여기에 떨어뜨리면, 쇼리가 단원 단위로 60초짜리 학습 숏폼을 만들어 드려요.
+              Drop in textbooks, papers, or lecture notes — Shori turns each section into a 60-second learning short.
             </div>
           )}
 
@@ -326,8 +326,8 @@ function DropZone({
                 flexWrap: "wrap",
               }}
             >
-              <Btn variant="primary" size="lg" onClick={onClickPick}>PDF 선택</Btn>
-              <Btn variant="secondary" size="lg">샘플로 먼저 보기</Btn>
+              <Btn variant="primary" size="lg" onClick={onClickPick}>Choose PDF</Btn>
+              <Btn variant="secondary" size="lg">Try a sample</Btn>
             </div>
           )}
 
@@ -343,11 +343,11 @@ function DropZone({
                 gap: 14,
               }}
             >
-              <span>PDF · 200MB까지</span>
+              <span>PDF · up to 200MB</span>
               <span style={{ color: "var(--ink-faint)" }}>·</span>
-              <span>한국어 / English</span>
+              <span>Korean / English</span>
               <span style={{ color: "var(--ink-faint)" }}>·</span>
-              <span>평균 10~12분</span>
+              <span>~10–12 min avg</span>
             </div>
           )}
         </div>
@@ -492,17 +492,17 @@ function Library({
   density: "comfortable" | "compact";
   onRowClick: (item: LibraryItem) => void;
 }) {
-  const [activeFilter, setActiveFilter] = useState<"전체" | "완료" | "만드는 중" | "확인 필요">("전체");
+  const [activeFilter, setActiveFilter] = useState<"All" | "Done" | "Rendering" | "Needs review">("All");
 
   const filtered = items.filter((it) => {
-    if (activeFilter === "전체") return true;
-    if (activeFilter === "완료") return it.status === "done";
-    if (activeFilter === "만드는 중") return it.status === "rendering";
-    if (activeFilter === "확인 필요") return it.status === "awaiting";
+    if (activeFilter === "All") return true;
+    if (activeFilter === "Done") return it.status === "done";
+    if (activeFilter === "Rendering") return it.status === "rendering";
+    if (activeFilter === "Needs review") return it.status === "awaiting";
     return true;
   });
 
-  const filters = ["전체", "완료", "만드는 중", "확인 필요"] as const;
+  const filters = ["All", "Done", "Rendering", "Needs review"] as const;
 
   return (
     <div
@@ -535,10 +535,10 @@ function Library({
               letterSpacing: -0.4,
             }}
           >
-            라이브러리
+            Library
           </div>
           <div style={{ marginTop: 2, fontSize: 12, color: "var(--ink-mute)" }}>
-            지금까지 만든 숏폼 {items.length}편이에요
+            {items.length} shorts made so far
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -578,7 +578,7 @@ function Library({
             );
           })}
         </div>
-        <Btn variant="ghost" size="sm">최신순 ▾</Btn>
+        <Btn variant="ghost" size="sm">Newest ▾</Btn>
       </div>
 
       {/* Column header */}
@@ -598,11 +598,11 @@ function Library({
           color: "var(--ink-mute)",
         }}
       >
-        <div style={{ width: density === "compact" ? 36 : 44 }}>썸네일</div>
-        <div>제목 · 출처</div>
-        <div style={{ minWidth: 80 }}>상태</div>
-        <div style={{ minWidth: 48, textAlign: "right" }}>길이</div>
-        <div style={{ minWidth: 76, textAlign: "right" }}>만든 날</div>
+        <div style={{ width: density === "compact" ? 36 : 44 }}>Thumb</div>
+        <div>Title · Source</div>
+        <div style={{ minWidth: 80 }}>Status</div>
+        <div style={{ minWidth: 48, textAlign: "right" }}>Length</div>
+        <div style={{ minWidth: 76, textAlign: "right" }}>Created</div>
       </div>
 
       {filtered.length === 0 ? (
@@ -614,7 +614,7 @@ function Library({
             color: "var(--ink-mute)",
           }}
         >
-          해당 상태의 숏폼이 없어요
+          No shorts in this status
         </div>
       ) : (
         filtered.map((it) => (
@@ -719,7 +719,7 @@ function RecentProjectCard({
               animation: "shori-pulse 1.4s ease-out infinite",
             }}
           />
-          생성 중
+          Generating
         </div>
       )}
 
@@ -775,7 +775,7 @@ function RecentProjectCard({
               letterSpacing: 0.2,
             }}
           >
-            {item.shortsCount} 편
+            {item.shortsCount} shorts
           </span>
         )}
 
@@ -965,13 +965,13 @@ function RecentProjectsGrid({
               color: "var(--ink)",
             }}
           >
-            최근 프로젝트
+            Recent projects
           </div>
           <div style={{ marginTop: 4, fontSize: 13, color: "var(--ink-mute)" }}>
-            이전에 작업한 PDF로 빠르게 이어 만들어요
+            Pick up where you left off with a previous PDF
           </div>
         </div>
-        <Btn variant="ghost" size="sm">전체 보기 →</Btn>
+        <Btn variant="ghost" size="sm">View all →</Btn>
       </div>
 
       <div
@@ -1006,7 +1006,7 @@ function EmptyHint() {
       }}
     >
       <div style={{ fontSize: 13, color: "var(--ink-mute)", textAlign: "center" }}>
-        아직 만든 숏폼이 없어요. 위 드롭존에 PDF를 올려보세요.
+        No shorts yet. Drop a PDF above to get started.
       </div>
     </div>
   );
@@ -1019,6 +1019,7 @@ function EmptyHint() {
 export default function DropView() {
   const setPdf = useAppStore((s) => s.setPdf);
   const setView = useAppStore((s) => s.setView);
+  const forceStart = useAppStore((s) => s.forceStart);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [hover, setHover] = useState(false);
@@ -1027,8 +1028,10 @@ export default function DropView() {
   const [recents, setRecents] = useState<PdfSummary[]>([]);
   const [allJobs, setAllJobs] = useState<Job[]>([]);
 
-  // "filled" once recents or jobs exist
-  const hasFilled = recents.length > 0 || allJobs.length > 0;
+  // "filled" once recents or jobs exist — but suppressed when the user
+  // explicitly clicked the brand logo to start fresh. The flag is cleared
+  // by setView() the moment the user navigates away from "drop".
+  const hasFilled = !forceStart && (recents.length > 0 || allJobs.length > 0);
 
   const refreshData = useCallback(async () => {
     try {
@@ -1060,7 +1063,7 @@ export default function DropView() {
         }
         await new Promise((r) => setTimeout(r, 1000));
       }
-      setErr("TOC 추출 시간이 초과됐어요. 다시 시도하거나 다른 PDF를 선택해 주세요.");
+      setErr("TOC extraction timed out. Please try again or pick a different PDF.");
       return false;
     },
     [setPdf, setView],
@@ -1076,7 +1079,7 @@ export default function DropView() {
           setView("toc");
           return;
         }
-        await waitForToc(id, "목차 다시 추출 중…");
+        await waitForToc(id, "Re-extracting TOC…");
       } catch (e) {
         setErr(String(e));
       } finally {
@@ -1089,11 +1092,11 @@ export default function DropView() {
   const handleFile = useCallback(
     async (file: File) => {
       if (!file.name.toLowerCase().endsWith(".pdf")) {
-        setErr("PDF 파일만 올릴 수 있어요.");
+        setErr("Only PDF files are supported.");
         return;
       }
       setErr(null);
-      setBusy(`${file.name} 업로드 중…`);
+      setBusy(`Uploading ${file.name}…`);
       try {
         const r = await api.uploadPdf(file);
 

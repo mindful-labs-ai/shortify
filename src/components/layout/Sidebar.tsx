@@ -98,7 +98,7 @@ function SidebarHeader({ children }: { children: React.ReactNode }) {
 function StreakChip({ count }: { count: number }) {
   return (
     <div
-      title={`${count}일 연속 학습 중`}
+      title={`${count}-day streak`}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -145,9 +145,10 @@ const NAV_ITEMS: Array<{
   target: View;
   disabled?: boolean;
 }> = [
-  { label: "라이브러리", count: 6, target: "drop" },
-  { label: "만드는 중", count: 2, target: "drop" },
-  { label: "초안", target: "drop", disabled: true },
+  { label: "Upload", target: "drop" },
+  { label: "Library", count: 6, target: "library" },
+  { label: "In progress", count: 2, target: "progress" },
+  { label: "Drafts", target: "drop", disabled: true },
 ];
 
 // ─── Sidebar ─────────────────────────────────────────────────
@@ -155,6 +156,12 @@ const NAV_ITEMS: Array<{
 export default function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
+  const setForceStart = useAppStore((s) => s.setForceStart);
+
+  const goHome = () => {
+    setForceStart(true);
+    setView("drop");
+  };
 
   return (
     <aside
@@ -168,8 +175,20 @@ export default function Sidebar() {
         minHeight: "100vh",
       }}
     >
-      {/* Brand block */}
-      <div style={{ padding: "20px 22px 18px" }}>
+      {/* Brand block — click to return home (drop view) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={goHome}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") goHome();
+        }}
+        style={{
+          padding: "20px 22px 18px",
+          cursor: "pointer",
+          userSelect: "none",
+        }}
+      >
         <ShortifyMark size={26} />
         <div
           style={{
@@ -179,7 +198,7 @@ export default function Sidebar() {
             lineHeight: 1.45,
           }}
         >
-          한 입 크기로, 자동으로 재생되는 학습
+          Bite-sized, auto-playing learning
         </div>
       </div>
 
@@ -187,7 +206,7 @@ export default function Sidebar() {
 
       {/* Workspace */}
       <div style={{ padding: "14px 0 8px" }}>
-        <SidebarHeader>작업 공간</SidebarHeader>
+        <SidebarHeader>Workspace</SidebarHeader>
         {NAV_ITEMS.map(({ label, count, target, disabled }) => (
           <SidebarItem
             key={label}
@@ -204,10 +223,10 @@ export default function Sidebar() {
 
       {/* Sources — mock data, wired in Phase 3 */}
       <div style={{ padding: "14px 0 8px" }}>
-        <SidebarHeader>PDF 출처</SidebarHeader>
-        <SidebarItem label="고등 물리학 I" count={5} />
-        <SidebarItem label="천체물리 입문" count={1} />
-        <SidebarItem label="모든 출처 보기" />
+        <SidebarHeader>PDF sources</SidebarHeader>
+        <SidebarItem label="Physics 101" count={5} />
+        <SidebarItem label="Intro to Astrophysics" count={1} />
+        <SidebarItem label="All sources" />
       </div>
 
       <div style={{ flex: 1 }} />
@@ -232,7 +251,7 @@ export default function Sidebar() {
               color: "var(--coral-700)",
             }}
           >
-            이번 달 사용량
+            This month
           </div>
           <div
             style={{
@@ -254,7 +273,7 @@ export default function Sidebar() {
               lineHeight: 1.45,
             }}
           >
-            BYOK · 본인 키로 청구 중
+            BYOK · billed to your key
           </div>
         </div>
 
@@ -308,9 +327,9 @@ export default function Sidebar() {
           {/* Name + sub-label */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--ink)" }}>
-              김지호
+              Jiho Kim
             </div>
-            <div style={{ fontSize: 10, color: "var(--ink-mute)" }}>설정 · API 키</div>
+            <div style={{ fontSize: 10, color: "var(--ink-mute)" }}>Settings · API keys</div>
           </div>
 
           {/* Streak chip — relocated from TitleBar per Phase 2 decision */}
