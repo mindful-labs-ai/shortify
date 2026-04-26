@@ -109,12 +109,19 @@ pub fn spawn(handle: &SidecarHandle) -> Result<ApiConfig, String> {
     let port = pick_port();
     let host = "127.0.0.1".to_string();
     // dev 빌드는 매 cargo build 마다 ad-hoc 서명이 바뀌어 Keychain ACL 캐시가
-    // 무효화 → 부팅마다 macOS 인증 다이얼로그가 뜬다. env 가 있으면 그걸 우선 쓰고
-    // 없을 때만 Keychain 으로 폴백.
+    // 무효화 → 부팅마다 'Shortify wants to use ...' 인증 다이얼로그가 뜬다.
+    // dev 에서는 Keychain 을 아예 건드리지 않고 Python 사이드카가 .env 에서 키를
+    // 직접 로드하게 둔다 (python-dotenv). prod 에서만 Keychain 폴백 활성화.
     let api_key = std::env::var("GEMINI_API_KEY")
         .ok()
         .filter(|v| !v.is_empty())
-        .unwrap_or_else(|| crate::keychain::get_or_empty("shortify", "gemini"));
+        .unwrap_or_else(|| {
+            if is_dev_mode() {
+                String::new()
+            } else {
+                crate::keychain::get_or_empty("shortify", "gemini")
+            }
+        });
 
     let mut cmd = if is_dev_mode() {
         dev_sidecar_command(&host, port, &token, &api_key)?
