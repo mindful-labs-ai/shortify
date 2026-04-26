@@ -15,7 +15,14 @@ from . import _gemini
 log = logging.getLogger("shortify.pipeline.image_gen")
 
 CONCURRENCY = 4
-NEG = "blurry, watermark, text artifacts, low quality"
+# 자막은 ffmpeg 컴포즈 단계에서 burn-in 되므로 이미지 자체에는 글자가
+# 들어가면 안 된다. 캐릭터 일관성도 글자 노이즈로 방해받음.
+NEG = (
+    "no text, no letters, no words, no captions, no labels, no signs, "
+    "no logos, no watermarks, no numbers, no typography of any kind, "
+    "no UI overlays, no speech bubbles, "
+    "blurry, low quality"
+)
 
 
 async def _build_prompt(

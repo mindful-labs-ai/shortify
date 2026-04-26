@@ -450,6 +450,9 @@ async def i2v(
             config=gtypes.GenerateVideosConfig(
                 duration_seconds=safe_dur,
                 aspect_ratio="9:16",
+                # 영상에 자체 음성 넣지 말 것 — TTS 나레이션을 ffmpeg 단계에서
+                # 따로 입히므로 Veo 가 BGM/효과음/말소리를 만들면 충돌한다.
+                generate_audio=False,
                 http_options=http_opts,
             ),
         )

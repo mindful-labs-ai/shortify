@@ -29,7 +29,7 @@ class DefaultPipeline:
         return await ingest_pdf.extract_section(Path(pdf_path), section_idx, toc)
 
     # ─────── 컨셉 / 씬 ───────
-    async def conceptize(self, text: str, lang: str = "en") -> dict:
+    async def conceptize(self, text: str, lang: str | None = None) -> dict:
         return await conceptizer.conceptize(text, lang=lang)
 
     def split_scenes(self, conceptized: dict, n: int = 14) -> list[dict]:
