@@ -11,7 +11,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
-from .api import concepts, health, jobs, toc, upload
+from .api import admin, concepts, health, jobs, toc, upload
 from .db.seed import seed_image_concepts
 from .db.session import dispose, session_factory
 from .queue.sqlite_impl import SqliteTaskQueue
@@ -92,6 +92,7 @@ app.include_router(upload.router, dependencies=protected)
 app.include_router(toc.router, dependencies=protected)
 app.include_router(jobs.router, dependencies=protected)
 app.include_router(concepts.router, dependencies=protected)
+app.include_router(admin.router, dependencies=protected)
 
 
 def run() -> None:
