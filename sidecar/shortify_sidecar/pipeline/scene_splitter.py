@@ -5,14 +5,59 @@
 """
 from __future__ import annotations
 
+import logging
+
+log = logging.getLogger("shortify.pipeline.scene_splitter")
+
 DEFAULT_DIST = {"hook": 2, "core": 3, "mechanism": 5, "recap": 2}
 PADDING = 2  # opening + closing
 
 
-def split(conceptized: dict, n: int = 14) -> list[dict]:
-    beats = {b["kind"]: b["text"] for b in conceptized.get("beats", [])}
-    keywords = conceptized.get("keywords", [])
-    title = conceptized.get("title", "")
+def _safe_beats(conceptized: dict) -> dict[str, str]:
+    """Gemini 가 가끔 null beat / 비표준 모양을 돌려줘도 죽지 않게.
+
+    허용 입력:
+      - {"beats": [{"kind":..,"text":..}, ...]}                (정규)
+      - {"beats": null} / 누락                                 → {}
+      - {"beats": [null, ..., {"kind":..}]}                    → 유효한 것만 채움
+      - {"beats": {"hook":"...", "core":"..."}}                → 그대로 반환
+    """
+    raw = conceptized.get("beats")
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return {str(k): str(v) for k, v in raw.items() if v is not None}
+    if not isinstance(raw, list):
+        log.warning("beats is %s, expected list/dict", type(raw).__name__)
+        return {}
+    out: dict[str, str] = {}
+    for b in raw:
+        if not isinstance(b, dict):
+            continue
+        kind = b.get("kind")
+        text = b.get("text")
+        if isinstance(kind, str) and text is not None:
+            out[kind] = str(text)
+    return out
+
+
+def _safe_list(value, label: str) -> list:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return [v for v in value if v is not None]
+    log.warning("%s is %s, expected list", label, type(value).__name__)
+    return []
+
+
+def split(conceptized: dict | None, n: int = 14) -> list[dict]:
+    if not isinstance(conceptized, dict):
+        log.warning("conceptized is %s, treating as empty", type(conceptized).__name__)
+        conceptized = {}
+
+    beats = _safe_beats(conceptized)
+    keywords = [str(k) for k in _safe_list(conceptized.get("keywords"), "keywords")]
+    title = str(conceptized.get("title") or "")
 
     scenes: list[dict] = []
 
