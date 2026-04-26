@@ -22,7 +22,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 def _run_migrations() -> None:
-    cfg = AlembicConfig(str(Path(__file__).parent.parent / "alembic.ini"))
+    pkg_root = Path(__file__).parent  # shortify_sidecar/
+    cfg = AlembicConfig(str(pkg_root.parent / "alembic.ini"))
+    # cwd 와 무관하게 동작하도록 절대경로 주입 (Tauri 가 src-tauri/ 에서 spawn).
+    cfg.set_main_option("script_location", str(pkg_root / "db" / "migrations"))
     cfg.set_main_option("sqlalchemy.url", settings().database_url)
     alembic_command.upgrade(cfg, "head")
 
