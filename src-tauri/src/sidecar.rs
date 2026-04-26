@@ -75,8 +75,11 @@ fn dev_sidecar_command(host: &str, port: u16, token: &str, api_key: &str) -> Res
     ]);
     cmd.env("SHORTIFY_HOST", host)
         .env("SHORTIFY_PORT", port.to_string())
-        .env("SHORTIFY_TOKEN", token)
-        .env("GEMINI_API_KEY", api_key);
+        .env("SHORTIFY_TOKEN", token);
+    // 빈 키를 주입하면 사이드카의 .env 가 덮어써지지 않음 — Keychain 에 값이 있을 때만 주입.
+    if !api_key.is_empty() {
+        cmd.env("GEMINI_API_KEY", api_key);
+    }
     Ok(cmd)
 }
 

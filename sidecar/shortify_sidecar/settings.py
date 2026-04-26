@@ -1,4 +1,8 @@
-"""Shortify sidecar 설정 — env 주도, 안전한 기본값."""
+"""Shortify sidecar 설정 — env 주도, 안전한 기본값.
+
+부팅 시 프로젝트 루트의 .env 를 자동 로드 (이미 설정된 환경변수는 덮어쓰지 않음).
+우선순위: 부모 프로세스 env > Keychain (Tauri 주입) > .env > 기본값.
+"""
 from __future__ import annotations
 
 import os
@@ -6,7 +10,12 @@ import secrets
 from functools import lru_cache
 from pathlib import Path
 
-from .storage.paths import app_support_dir
+from dotenv import find_dotenv, load_dotenv
+
+# .env 자동 탐색 (cwd 부터 위로). override=False → 기존 env 우선.
+load_dotenv(find_dotenv(usecwd=True), override=False)
+
+from .storage.paths import app_support_dir  # noqa: E402  (after load_dotenv)
 
 
 class Settings:

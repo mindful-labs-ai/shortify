@@ -51,6 +51,8 @@ cp .env.example .env
 
 `GEMINI_API_KEY`는 [Google AI Studio](https://aistudio.google.com/app/apikey)에서 발급. 단일 키 하나로 텍스트·이미지·영상·TTS·오디오 정렬 모두 호출.
 
+> 키 우선순위: 부모 프로세스 환경변수 > Keychain (Settings UI 입력) > `.env`. `.env` 가 가장 단순한 dev 경로라 권장.
+
 ---
 
 ## 2. 의존성 설치

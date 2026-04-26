@@ -94,7 +94,7 @@ What it does, in order:
 | `the greenlet library is required` | `cd sidecar && .venv/bin/pip install -e ".[dev]"` |
 | `coroutine 'run_migrations_online' was never awaited` | use `asyncio.to_thread` (already done in `main.py`) |
 | `DEP0169 url.parse()` from pnpm | `corepack prepare pnpm@10.16.1 --activate` |
-| `GEMINI_API_KEY missing` | Settings UI → save key (Keychain), or `.env` for dev |
+| `GEMINI_API_KEY missing` | Put it in `.env` at repo root (auto-loaded by sidecar via python-dotenv on boot, walks up from cwd). Or Settings UI → Keychain (overrides .env when present). |
 | `Cannot find name 'process'` in `vite.config.ts` | already fixed: `@types/node` + tsconfig.node.json |
 | TS6310 composite/emit | already fixed: removed references in `tsconfig.json` |
 | ESLint can't find `vite.config.ts` | already fixed: ignored in `eslint.config.js` |
