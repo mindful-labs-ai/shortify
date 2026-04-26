@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .models import ImageConcept, Prompt
@@ -55,8 +55,11 @@ async def seed_image_concepts(session: AsyncSession) -> int:
       DELETE 하지 않음.
     반환: 새로 INSERT 된 개수.
     """
-    result = await session.execute(select(ImageConcept))
-    existing: dict[str, ImageConcept] = {r.slug: r for r in result.scalars().all()}
+    # ORM hydration 우회: reference_image_paths 가 raw string 으로 잘못
+    # 들어간 row 가 있으면 ImageConcept 인스턴스화 단계에서 json.loads 실패로
+    # 부팅 자체가 죽는다. raw column 만 SELECT 해서 hydration 회피.
+    result = await session.execute(select(ImageConcept.slug))
+    existing_slugs = {row[0] for row in result.all()}
     added = 0
     assets_root = _project_root() / "assets" / "image_concepts"
     seed_slugs = {s["slug"] for s in SEED}
@@ -66,15 +69,21 @@ async def seed_image_concepts(session: AsyncSession) -> int:
         preview = slug_dir / "preview.png"
         refs = sorted(p.as_posix() for p in slug_dir.glob("ref_*.png"))
 
-        if s["slug"] in existing:
-            row = existing[s["slug"]]
-            row.name = s["name"]
-            row.description = s["description"]
-            row.image_style_preset = s["image_style_preset"]
-            row.reference_image_paths = refs or None
-            row.preview_path = str(preview)
-            row.sort_order = s["sort_order"]
-            row.active = True
+        if s["slug"] in existing_slugs:
+            # UPDATE — JSON 컬럼은 SQLAlchemy 가 list 를 직접 직렬화한다.
+            await session.execute(
+                update(ImageConcept)
+                .where(ImageConcept.slug == s["slug"])
+                .values(
+                    name=s["name"],
+                    description=s["description"],
+                    image_style_preset=s["image_style_preset"],
+                    reference_image_paths=refs or None,
+                    preview_path=str(preview),
+                    sort_order=s["sort_order"],
+                    active=True,
+                )
+            )
         else:
             session.add(
                 ImageConcept(
@@ -90,10 +99,14 @@ async def seed_image_concepts(session: AsyncSession) -> int:
             )
             added += 1
 
-    # 코드에서 빠진 캐릭터는 비활성화 (휴지통 역할)
-    for slug, row in existing.items():
-        if slug not in seed_slugs and row.active:
-            row.active = False
+    # 코드에서 빠진 캐릭터는 비활성화 (휴지통 역할).
+    stale = existing_slugs - seed_slugs
+    if stale:
+        await session.execute(
+            update(ImageConcept)
+            .where(ImageConcept.slug.in_(stale))
+            .values(active=False)
+        )
 
     await session.commit()
     return added
