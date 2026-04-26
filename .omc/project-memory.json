@@ -38,8 +38,8 @@
     },
     {
       "path": "wiki/design/character/01-bible.md",
-      "accessCount": 12,
-      "lastAccessed": 1777181859505,
+      "accessCount": 15,
+      "lastAccessed": 1777185313465,
       "type": "file"
     },
     {
@@ -61,6 +61,12 @@
       "type": "file"
     },
     {
+      "path": "wiki/design/character/03-cast.md",
+      "accessCount": 10,
+      "lastAccessed": 1777185327786,
+      "type": "file"
+    },
+    {
       "path": "wiki/design/character/02-usage.md",
       "accessCount": 8,
       "lastAccessed": 1777177095997,
@@ -79,15 +85,27 @@
       "type": "file"
     },
     {
+      "path": "design/character/README.md",
+      "accessCount": 7,
+      "lastAccessed": 1777185299662,
+      "type": "file"
+    },
+    {
+      "path": "wiki/design/ui/03-components.md",
+      "accessCount": 6,
+      "lastAccessed": 1777176159329,
+      "type": "file"
+    },
+    {
       "path": "sidecar/pyproject.toml",
       "accessCount": 3,
       "lastAccessed": 1777168661191,
       "type": "file"
     },
     {
-      "path": "design/character/README.md",
+      "path": "design/character/cast/README.md",
       "accessCount": 5,
-      "lastAccessed": 1777181901358,
+      "lastAccessed": 1777185238215,
       "type": "file"
     },
     {
@@ -277,16 +295,10 @@
       "type": "directory"
     },
     {
-      "path": "wiki/design/character/03-cast.md",
+      "path": "",
       "accessCount": 1,
-      "lastAccessed": 1777181840125,
-      "type": "file"
-    },
-    {
-      "path": "design/character/cast/README.md",
-      "accessCount": 1,
-      "lastAccessed": 1777181879291,
-      "type": "file"
+      "lastAccessed": 1777185318422,
+      "type": "directory"
     }
   ],
   "userDirectives": []
