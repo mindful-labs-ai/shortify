@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Shortify — 영상 생성 중</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;700;800;900&family=Pretendard:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* Pretendard via cdn (Google Fonts mirror is incomplete; fall back to system) */
+  @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+
+  :root{
+    /* Brand palette — shortify v1.1 */
+    --coral-50:  #FFF1EB;
+    --coral-100: #FFD9C9;
+    --coral-500: #FF6B4A;  /* Spark coral — primary */
+    --coral-700: #E04A2B;  /* Ember — primary dark */
+    --coral-900: #993C1D;
+
+    --yellow-50:  #FFF4D6;
+    --yellow-500: #FFC83D;  /* Sunny yellow — celebration only */
+    --yellow-900: #7A5A00;
+
+    --mint-50:  #E0F7EE;
+    --mint-500: #5BD4A8;    /* Mint green — success only */
+    --mint-900: #0F6E56;
+
+    --sky-500: #4A9BFF;     /* Info / link */
+
+    /* Warm neutrals — no pure black/white */
+    --ink:        #1A1614;
+    --ink-soft:   #3A3431;
+    --ink-mute:   #6B6258;
+    --ink-faint:  #948A7E;
+
+    --cream:      #FFF8F2;  /* main surface */
+    --cloud:      #F5EFE8;  /* subtle bg */
+    --paper:      #FBF5EE;
+    --warm-100:   #EFE7DD;
+    --warm-200:   #E2D8CB;
+    --warm-300:   #C9BCAB;
+
+    --hairline:        rgba(26, 22, 20, 0.08);
+    --hairline-strong: rgba(26, 22, 20, 0.16);
+
+    /* Compatibility aliases (older code may still reference these) */
+    --n-0:   var(--cream);
+    --n-50:  var(--cream);
+    --n-100: var(--cloud);
+    --n-150: var(--warm-100);
+    --n-200: var(--warm-200);
+    --n-300: var(--warm-300);
+    --n-400: var(--ink-faint);
+    --n-500: var(--ink-mute);
+    --n-600: var(--ink-soft);
+    --n-700: var(--ink-soft);
+    --n-800: var(--ink);
+    --n-900: var(--ink);
+    --n-950: var(--ink);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 22px;
+
+    --shadow-sm: 0 1px 2px rgba(26,22,20,0.06);
+    --shadow-md: 0 6px 16px rgba(26,22,20,0.08);
+    --shadow-lg: 0 16px 40px rgba(26,22,20,0.12);
+    --shadow-coral: 0 8px 20px rgba(255,107,74,0.25);
+
+    /* Soft warm-grey hard-shadow stamp used under buttons, cards, badges.
+       Lighter than --ink-soft so the bottom edge reads as depth, not ink.
+       Slight x-offset gives a hand-stamped, not perfectly aligned, feel. */
+    --stamp-soft: #C9BCAB;   /* matches warm-300 */
+    --stamp-deep: #B5A693;
+    --shadow-stamp-sm: 2px 2px 0 var(--stamp-soft);
+    --shadow-stamp-md: 3px 4px 0 var(--stamp-soft);
+    --shadow-stamp-lg: 4px 5px 0 var(--stamp-deep);
+
+    --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", sans-serif;
+    --font-display: "Pretendard Variable", Pretendard, "Nunito", -apple-system, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  *{ box-sizing: border-box; }
+  html, body{ margin: 0; padding: 0; }
+  body{
+    font-family: var(--font-sans);
+    color: var(--ink);
+    /* Warm cream desktop backdrop with a subtle coral wash */
+    background:
+      radial-gradient(1200px 800px at 88% -10%, #FFD9C9 0%, transparent 55%),
+      radial-gradient(900px 700px at 0% 110%, #FFE4D5 0%, transparent 50%),
+      linear-gradient(180deg, #F5EBDF 0%, #ECDFCF 100%);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root{ min-height: 100vh; }
+
+  /* Shori mascot motion */
+  @keyframes shori-idle {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50%      { transform: translateY(-4px) rotate(1deg); }
+  }
+  @keyframes shori-talk {
+    0%, 100% { transform: translateY(0) rotate(-2deg); }
+    50%      { transform: translateY(-3px) rotate(2.5deg); }
+  }
+  @keyframes shori-shadow {
+    0%, 100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+    50%      { opacity: 0.55; transform: translateX(-50%) scale(0.85); }
+  }
+  @keyframes bubble-pop {
+    from { opacity: 0; transform: translateY(6px) scale(0.92); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes bubble-dot {
+    0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+    30%           { opacity: 1;    transform: translateY(-3px); }
+  }
+  @keyframes bubble-text {
+    from { opacity: 0; transform: translateY(2px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes progress-stripes {
+    from { background-position: 0 0; }
+    to   { background-position: 30px 0; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(0.7); }
+  }
+</style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    // Tweak defaults persisted by the host (Tweaks toggle)
+    window.__TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "windowMode": "framed",
+      "progress": 42,
+      "phase": "render"
+    }/*EDITMODE-END*/;
+  </script>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="shortify-generating.jsx"></script>
+</body>
+</html>
