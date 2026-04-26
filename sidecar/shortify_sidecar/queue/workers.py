@@ -153,7 +153,10 @@ async def _handle_generate_video(task: Task) -> None:
         async with session_factory()() as s:
             await _set_stage(s, job_id, 4, message="generating images")
         images = await pipeline.generate_images(
-            scenes, job.image_concept_slug, job_id=job_id
+            scenes,
+            job.image_concept_slug,
+            job_id=job_id,
+            conceptized=job.conceptized_json,
         )
 
     # ── Stage 5: Clipping (이미 14개 mp4 있으면 재사용) ────────────

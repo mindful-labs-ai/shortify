@@ -37,7 +37,12 @@ class DefaultPipeline:
 
     # ─────── 외부 AI ───────
     async def generate_images(
-        self, scenes: list[dict], concept_slug: str, *, job_id: str
+        self,
+        scenes: list[dict],
+        concept_slug: str,
+        *,
+        job_id: str,
+        conceptized: dict | None = None,
     ) -> list[Path]:
         async with session_factory()() as s:
             concept = (
@@ -46,7 +51,9 @@ class DefaultPipeline:
                 )
             ).scalar_one()
         out = output_dir(job_id) / "images"
-        return await image_gen.generate(scenes, concept, out, job_id=job_id)
+        return await image_gen.generate(
+            scenes, concept, out, job_id=job_id, conceptized=conceptized
+        )
 
     async def generate_clips(
         self, images: list[Path], motion: str, *, job_id: str

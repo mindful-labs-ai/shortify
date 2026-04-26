@@ -131,6 +131,34 @@ PROMPT_SEED: list[dict] = [
         ),
     },
     {
+        # v2: scene 의 실제 PDF 본문 (SUBJECT) + KEYWORDS + TITLE 을 같이 주입.
+        # 안 주면 모델이 STYLE+DIRECTION 만 보고 그려서 PDF 와 무관한 그림이 나옴.
+        # 사용자가 v1 row 를 직접 수정한 경우 보존하기 위해 새 key 로 추가.
+        "key": "image_gen_scene_v2",
+        "description": (
+            "Imagen prompt grounded in the source passage. STYLE_PRESET sets "
+            "visual style; DIRECTION sets composition role; SUBJECT is the "
+            "actual concept text from the PDF; KEYWORDS are highlighted terms; "
+            "TITLE keeps the lesson topic anchored."
+        ),
+        "variables": [
+            "STYLE_PRESET",
+            "DIRECTION",
+            "NEGATIVE",
+            "SUBJECT",
+            "KEYWORDS",
+            "TITLE",
+        ],
+        "template": (
+            "Concept: ${TITLE}$. Subject: ${SUBJECT}$. "
+            "Highlight terms: ${KEYWORDS}$. "
+            "Style: ${STYLE_PRESET}$. Composition: ${DIRECTION}$. "
+            "Vertical 9:16 educational illustration. "
+            "Stay faithful to the subject; do not invent unrelated content. "
+            "Negative: ${NEGATIVE}$."
+        ),
+    },
+    {
         "key": "align_words_audio",
         "description": "Audio-understanding prompt: word-level timestamps for narration MP3.",
         "variables": ["TRANSCRIPT"],
