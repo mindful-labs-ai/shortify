@@ -33,6 +33,7 @@ def client():
 async def text_json(prompt: str, *, system: str | None = None) -> dict:
     """텍스트 → JSON 응답. 실패 시 RuntimeError."""
     import json as _json
+    import time as _time
 
     def _call():
         c = client()
@@ -46,7 +47,10 @@ async def text_json(prompt: str, *, system: str | None = None) -> dict:
         )
         return resp.text
 
+    t0 = _time.perf_counter()
+    log.info("gemini.text_json model=%s prompt_len=%d", settings().model_text, len(prompt))
     raw = await asyncio.to_thread(_call)
+    log.info("gemini.text_json done in %.2fs (resp_len=%d)", _time.perf_counter() - t0, len(raw or ""))
     try:
         return _json.loads(raw)
     except Exception as e:  # noqa: BLE001
@@ -55,6 +59,8 @@ async def text_json(prompt: str, *, system: str | None = None) -> dict:
 
 
 async def text(prompt: str, *, system: str | None = None) -> str:
+    import time as _time
+
     def _call():
         c = client()
         resp = c.models.generate_content(
@@ -64,11 +70,16 @@ async def text(prompt: str, *, system: str | None = None) -> str:
         )
         return resp.text
 
-    return await asyncio.to_thread(_call)
+    t0 = _time.perf_counter()
+    log.info("gemini.text model=%s prompt_len=%d", settings().model_text, len(prompt))
+    out = await asyncio.to_thread(_call)
+    log.info("gemini.text done in %.2fs", _time.perf_counter() - t0)
+    return out
 
 
 async def image(prompt: str, out_path: Path, *, ref_images: list[Path] | None = None) -> Path:
     """Imagen / gemini-image — 1장 생성 후 PNG 저장."""
+    import time as _time
     def _call():
         c = client()
         contents: list[Any] = [prompt]
@@ -89,12 +100,16 @@ async def image(prompt: str, out_path: Path, *, ref_images: list[Path] | None = 
         raise RuntimeError("Gemini image: no inline_data in response")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info("gemini.image model=%s out=%s", settings().model_image, out_path.name)
     await asyncio.to_thread(_call)
+    log.info("gemini.image done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name)
     return out_path
 
 
 async def i2v(image_path: Path, motion_prompt: str, out_path: Path, *, duration_sec: int = 5) -> Path:
     """Veo I2V — 이미지 1장 → MP4."""
+    import time as _time
     def _call():
         c = client()
         from google.genai import types as gtypes  # type: ignore
@@ -115,12 +130,16 @@ async def i2v(image_path: Path, motion_prompt: str, out_path: Path, *, duration_
         video.video.save(str(out_path))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info("gemini.i2v model=%s in=%s dur=%ds", settings().model_video, image_path.name, duration_sec)
     await asyncio.to_thread(_call)
+    log.info("gemini.i2v done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name)
     return out_path
 
 
 async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
     """gemini TTS native audio → MP3."""
+    import time as _time
     def _call():
         c = client()
         resp = c.models.generate_content(
@@ -141,7 +160,10 @@ async def tts(text_in: str, voice: str, speed: float, out_path: Path) -> Path:
         raise RuntimeError("Gemini TTS: no inline_data in response")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    t0 = _time.perf_counter()
+    log.info("gemini.tts model=%s voice=%s speed=%.2f text_len=%d", settings().model_tts, voice, speed, len(text_in))
     await asyncio.to_thread(_call)
+    log.info("gemini.tts done in %.2fs (%s)", _time.perf_counter() - t0, out_path.name)
     return out_path
 
 
@@ -150,6 +172,7 @@ async def align_words_audio(audio_path: Path, text_in: str) -> list[dict]:
 
     응답: ``[{"word": str, "start": float, "end": float}, ...]``
     """
+    import time as _time
     def _call():
         c = client()
         from google.genai import types as gtypes  # type: ignore

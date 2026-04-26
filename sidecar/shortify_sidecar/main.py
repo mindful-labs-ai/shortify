@@ -19,7 +19,13 @@ from .queue.workers import WorkerPool
 from .settings import settings
 
 log = logging.getLogger("shortify")
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+    datefmt="%H:%M:%S",
+)
+# Reduce uvicorn noise on access log; keep our own loggers loud.
+logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 
 def _run_migrations() -> None:
