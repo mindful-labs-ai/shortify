@@ -79,7 +79,7 @@ brands/shortify/
 | `shortify/ingest/pdf.py` | pypdf · pdfplumber로 PDF → 텍스트 + 메타데이터 |
 | `shortify/ingest/youtube.py` | yt-dlp + 자동 자막으로 유튜브 → 텍스트 |
 | `shortify/ingest/markdown.py` | 마크다운 frontmatter 파싱 + 본문 |
-| `shortify/conceptizer.py` | Claude/Gemini 호출 → `{concept, hook, beats[4], keywords[], citation}` JSON |
+| `shortify/conceptizer.py` | `gemini-3.1-flash-lite-preview` 호출 → `{concept, hook, beats[4], keywords[], citation}` JSON |
 | `d0po_video_cli/overlays.py` | `term_highlight()` + `citation_footer()` 추가 (additive, d0po 무영향) |
 
 ---
