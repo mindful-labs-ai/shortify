@@ -184,6 +184,52 @@ async def pdf_toc(pdf_path: Path, page_count: int) -> list[dict]:
     return out
 
 
+async def pdf_section_text(pdf_bytes: bytes, *, title: str = "") -> str:
+    """선택 페이지 범위만 담긴 PDF bytes → 정제된 본문 텍스트.
+
+    pypdf 가 텍스트 레이어가 없는 PDF (스캔본 등) 에서 빈 문자열을 돌려줄 때
+    multimodal Gemini 가 OCR + 정리 역할을 한다. 응답은 plain text.
+    """
+    prompt = (
+        "Extract the readable body text of this PDF section, faithful to "
+        "the source. Preserve original language. Strip running headers, "
+        "page numbers, footnotes, and image captions. Return ONLY the "
+        "extracted text — no summarization, no commentary."
+    )
+    if title:
+        prompt += f"\n\nFor reference, the section title is: '{title}'."
+
+    def _call():
+        c = client()
+        from google.genai import types as gtypes  # type: ignore
+
+        resp = c.models.generate_content(
+            model=settings().model_text,
+            contents=[
+                prompt,
+                gtypes.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+            ],
+        )
+        return resp.text
+
+    log.info(
+        "gemini.pdf_section_text model=%s pdf_bytes=%d title=%r",
+        settings().model_text,
+        len(pdf_bytes),
+        title[:40],
+    )
+    async with trace(
+        kind="pdf_section_text",
+        model=settings().model_text,
+        request_preview=prompt,
+        request_meta={"pdf_bytes": len(pdf_bytes), "title": title},
+    ) as tr:
+        out = await asyncio.to_thread(_call)
+        tr.response_preview = (out or "")[:2000]
+        tr.response_meta = {"resp_len": len(out or "")}
+    return out or ""
+
+
 async def text(prompt: str, *, system: str | None = None) -> str:
     def _call():
         c = client()
