@@ -177,23 +177,39 @@ async def image(
         contents: list[Any] = []
         if ref_images:
             preface = (
-                f"The following {len(ref_images)} image(s) are the canonical "
-                "reference for the main character's appearance (face, hair, "
-                "clothing, body proportions). The new image you generate MUST "
-                "depict the SAME character — keep these features identical "
-                "across every render. Treat these images as the ground truth "
-                "for who the character is, not as loose style inspiration."
+                "CHARACTER REFERENCE — read this carefully:\n"
+                f"The next {len(ref_images)} image(s) define the EXACT "
+                "appearance of the main character. This is identity, not "
+                "style. The character you draw must match these references "
+                "in every visible feature: face shape, eyes, nose, mouth, "
+                "hair color, hairstyle, skin tone, body proportions, "
+                "clothing, accessories. Do NOT redesign, age, restyle, or "
+                "reinterpret the character. If the scene's mood differs, "
+                "change only the pose, expression, and background — keep "
+                "the character itself identical."
             )
             contents.append(preface)
+            # 캐릭터 고정 강도를 높이기 위해 ref 를 두 번 반복 첨부.
+            # API 호출당 다른 응답이 나와도 identity 가 흔들리지 않도록.
             for p in ref_images:
+                ref_bytes = p.read_bytes()
+                # 1회차
+                contents.append(
+                    gtypes.Part.from_bytes(data=ref_bytes, mime_type="image/png")
+                )
+            contents.append(
+                "(End of character references. The character above is fixed.)"
+            )
+            for p in ref_images:
+                # 2회차 — prompt 직전에 다시 보여줘서 마지막에 본 인상을 강화
                 contents.append(
                     gtypes.Part.from_bytes(
                         data=p.read_bytes(), mime_type="image/png"
                     )
                 )
             contents.append(
-                "Now, render this scene featuring that exact character:\n\n"
-                + prompt
+                "Now render the following scene featuring that EXACT same "
+                "character (do not change their appearance):\n\n" + prompt
             )
         else:
             contents.append(prompt)
